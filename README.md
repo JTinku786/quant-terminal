@@ -1,4 +1,69 @@
-# Quant Terminal
+# Quant Terminal — Titania edition (TradingView clone)
+
+**A TradingView-style chart terminal with your ICT indicators, online, fed by your own market database.**
+
+🔗 **Live site:** https://quant-terminal-zeta.vercel.app
+📘 **Technical architecture:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
+![Chart with ICT indicators](docs/images/01-chart-indicators.png)
+
+## What it does, in one minute
+
+1. **Type a symbol** (AAPL, RELIANCE.NS, EURUSD, BTCUSDT …) and pick a timeframe (1m to 1M).
+2. **The chart loads candles** — first from the Titania database (US Dow 30, NIFTY 50, indices), otherwise from free public sources (Binance, Yahoo, Nasdaq).
+3. **Your indicators draw on top** — LuxAlgo-style liquidity/SMC/ICT concepts, Sniper KhanSaab, Liquidity Pullback, ICT sessions, FVGs, order blocks and more (30 custom indicators + 87 built in).
+4. **Use the tools below the chart** — screener, heatmap, strategy tester, bar replay, paper trading.
+
+```mermaid
+flowchart LR
+  U["👤 You pick<br/>a symbol"] --> S["🌐 Quant Terminal<br/>(Vercel)"]
+  S -->|"stored symbols"| DB[("🗄️ Titania database<br/>via read-only bridge")]
+  S -->|"everything else"| P["📡 Binance · Yahoo · Nasdaq"]
+  S --> C["📈 Chart + your indicators"]
+```
+
+**Why it doesn't get rate-limited:** most charts come from your own database, and every answer is cached at Vercel's edge, so many visitors share one request (30 s for intraday candles, 5 min for daily).
+
+## Picture tour
+
+### 1. Chart from your own database
+The title shows **"Titania DB"** when candles come from your database. Here: AAPL, 5 minutes, with the LuxAlgo + Sniper indicators.
+
+![AAPL 5m from Titania DB](docs/images/02-aapl-5m-titania-db.png)
+
+### 2. Screener — filter the market
+Pick a market, add a rule (for example *RSI 14 below 30*) and press **Scan**.
+
+![Screener](docs/images/03-screener.png)
+
+### 3. Heatmap — the whole market at a glance
+Each tile is a stock, sized by market cap and coloured by today's change. Click a tile to open its chart.
+
+![Heatmap](docs/images/04-heatmap.png)
+
+### 4. Strategy tester — test an idea on the chart
+Build *buy when* / *sell when* rules (for example EMA 9 crosses above EMA 21) and press **Run on chart**.
+
+![Strategy tester](docs/images/05-strategy-tester.png)
+
+### 5. Paper trading — practice without money
+Buy and sell on the chart with a pretend account.
+
+![Paper trading](docs/images/06-paper-trading.png)
+
+## On the live site vs. on your PC
+
+| | Live site (Vercel) | On your PC (`npm start`) |
+|---|---|---|
+| Charts, indicators, screener, heatmap, tester, replay | ✅ | ✅ |
+| Your layouts and indicators on first open | ✅ (bundled) | ✅ |
+| Saved drawings / alerts | Temporary (can reset) | ✅ Saved in `data/` |
+| Background alerts | ❌ | ✅ |
+| Saving new custom indicator code | ❌ (redeploy) | ✅ |
+
+---
+
+## About the original Quant Terminal
 
 A free trading terminal that runs on your own computer: charts, 87 indicators, 13 drawing tools, alerts, a screener, a heatmap, seasonals, earnings and dividend calendars, news, company financials, a strategy tester with quant checks, bar replay and paper trading. No account, no subscription, no ads, no limit on indicators per chart.
 
