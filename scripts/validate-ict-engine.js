@@ -1,0 +1,36 @@
+import fs from 'node:fs';import assert from 'node:assert/strict';import crypto from 'node:crypto';
+import {runStructureEngine,ENGINE_VERSION} from '../public/lib/ict-structure-engine.js';
+const root='data/ict-engine',manifest=JSON.parse(fs.readFileSync(root+'/manifest.json'));
+const sha=x=>crypto.createHash('sha256').update(x).digest('hex');
+const report={version:ENGINE_VERSION,runAt:new Date().toISOString(),window:{start:manifest.start,end:manifest.end},sourceHash:sha(fs.readFileSync('research/ict-structure-engine/original-v6.3.0.pine')),engineHash:sha(fs.readFileSync('public/lib/ict-structure-engine.js')),symbols:[],limitations:['Local adaptation, not certified TradingView signal parity.','NY calendar days and locally constructed HTF buckets differ from some exchange sessions.','Virtual entries use signal close; actual market fills require the next available price plus costs.','Author win means TP1 touched; same-bar TP/SL order remains unknown.','Not a broker backtest; no spread, commissions, partial exits or real-money execution.']};
+let failures=0;
+for(const item of manifest.symbols){
+ const raw=fs.readFileSync(root+'/candles/'+item.symbol+'.json');const {candles:bars}=JSON.parse(raw);
+ const params={latest:'All completed',market:item.market,tick:item.market==='us'?.01:item.symbol.endsWith('JPY')?.001:.00001};
+ const row={...item,parameters:params,checks:{},failures:[]};const check=(name,fn)=>{try{fn();row.checks[name]='PASS';}catch(e){row.checks[name]='FAIL';row.failures.push(name+': '+e.message);failures++;}};
+ const result=runStructureEngine(bars,params),recent=e=>e.knownAt>=manifest.start&&e.knownAt<manifest.end;
+ const events=result.events.filter(recent),trades=result.trades.filter(t=>t.decisionKnownAt>=manifest.start&&t.decisionKnownAt<manifest.end);
+ row.counts={bars:bars.filter(b=>b.time>=manifest.start&&b.time+300<=manifest.end).length,structure:events.filter(e=>['BOS','CHOCH'].includes(e.kind)).length,sweeps:events.filter(e=>e.kind==='SWEEP').length,setups:events.filter(e=>e.kind==='SETUP_ARM').length,entryCandidates:result.decisions.filter(recent).length,trades:trades.length,closed:trades.filter(t=>t.exitTime!=null).length,open:trades.filter(t=>t.exitTime==null).length,authorTP1Wins:trades.filter(t=>t.exitTime!=null&&t.authorWin).length,ambiguousTrades:trades.filter(t=>t.ambiguities.length).length};
+ check('dataFingerprint',()=>assert.equal(sha(raw),item.sha256));
+ check('coverage',()=>{assert.ok(row.counts.bars>=500);assert.ok(item.first<=manifest.start+4*86400);assert.ok(manifest.end-item.last<3*86400);});
+ check('independentStructureReference',()=>{const ref=JSON.parse(fs.readFileSync(root+'/candles/'+item.symbol+'.reference.json'));assert.deepEqual(result.events.filter(e=>['BOS','CHOCH'].includes(e.kind)).map(e=>[e.index,e.layer,e.dir*(e.kind==='CHOCH'?2:1),e.level]),ref.events);});
+ check('independentFvgReference',()=>{const ref=JSON.parse(fs.readFileSync(root+'/candles/'+item.symbol+'.reference.json'));assert.deepEqual(result.events.filter(e=>e.kind==='FVG_CREATE').map(e=>[e.index,e.dir,e.top,e.btm]),ref.fvgs);});
+ check('allSweepCandles',()=>{for(const e of result.events.filter(e=>e.kind==='SWEEP')){const b=bars[e.index];assert.ok(e.side>0?b.high>e.level&&b.close<e.level:b.low<e.level&&b.close>e.level);assert.ok(e.poolKnownAt<=e.knownAt);}});
+ check('allTradeEvidence',()=>{for(const t of trades){const s=t.evidence,b=bars[t.entryIndex],sb=bars[s.sweep.index];assert.ok(s.sweep.index<=s.armIndex);assert.ok(s.armIndex<t.entryIndex);assert.ok(t.entryIndex<=s.expire);assert.ok(s.armKnownAt<t.decisionKnownAt);assert.ok(t.decisionKnownAt===b.time+300);assert.equal(t.entry,b.close);assert.ok(s.sweep.name);assert.ok(s.displacement);assert.ok(b.low<=s.zone.top&&b.high>=s.zone.btm);assert.ok(t.dir>0?sb.low<s.sweep.level&&sb.close>s.sweep.level:sb.high>s.sweep.level&&sb.close<s.sweep.level);assert.ok(t.dir*(t.entry-t.initialSL)>0);assert.ok(t.dir*(t.targets[0]-t.entry)>0);assert.ok(t.dir*(t.targets[1]-t.targets[0])>0&&t.dir*(t.targets[2]-t.targets[1])>0);if(t.exitIndex!=null)assert.ok(t.exitIndex>t.entryIndex);}});
+ // Recompute without future candles at every entry and ten evenly spaced history cutoffs.
+ const cuts=new Set([...trades.map(t=>t.entryIndex+1),...Array.from({length:10},(_,k)=>Math.floor(bars.length*(k+1)/11))]);
+ check('prefixCausality',()=>{for(const end of cuts){const prefix=runStructureEngine(bars.slice(0,end),params);assert.deepEqual(prefix.events,result.events.filter(e=>e.index<end));assert.deepEqual(prefix.barStates,result.barStates.slice(0,end));for(const k of ['entry','stop','tp1','tp2','tp3','buy','sell','htfHigh','htfLow'])assert.deepEqual(prefix[k],result[k].slice(0,end));}});
+ row.prefixReplays=cuts.size;
+ const closed=trades.filter(t=>t.exitTime!=null);row.outcomes=Object.fromEntries([...new Set(closed.map(t=>t.result))].map(x=>[x,closed.filter(t=>t.result===x).length]));
+ row.dataGaps=bars.filter((b,i)=>i&&b.time-bars[i-1].time>300).length;
+ row.status=row.failures.length?'FAIL':'PASS';report.symbols.push(row);
+ fs.writeFileSync(root+'/'+item.symbol+'-evidence.json',JSON.stringify({parameters:result.parameters,events,trades,setups:result.setups.filter(s=>s.armKnownAt>=manifest.start&&s.armKnownAt<manifest.end),decisions:result.decisions.filter(recent)},null,2));
+ console.log(item.symbol,row.status,JSON.stringify(row.counts),'prefixes',cuts.size);for(const f of row.failures)console.log(f);
+}
+report.status=failures?'FAIL':'PASS';report.total=report.symbols.reduce((a,r)=>{for(const [k,v]of Object.entries(r.counts))a[k]=(a[k]||0)+v;return a;},{});report.failures=failures;
+fs.writeFileSync(root+'/validation.json',JSON.stringify(report,null,2));
+const date=t=>new Date(t*1000).toISOString();
+let md=`# ICT Structure Engine local validation\n\nStatus: ${report.status}. Source v6.3.0; ${report.version}.\n\nWindow: ${date(manifest.start)} inclusive to ${date(manifest.end)} exclusive (September 24 through October 23, New York). 35 earlier calendar days initialize state.\n\n| Symbol | Market | 5m bars | Setups | Trades | Closed | TP1 wins* | Ambiguous | Checks |\n|---|---|---:|---:|---:|---:|---:|---:|---|\n`;
+for(const r of report.symbols)md+=`|${r.symbol}|${r.market}|${r.counts.bars}|${r.counts.setups}|${r.counts.trades}|${r.counts.closed}|${r.counts.authorTP1Wins}|${r.counts.ambiguousTrades}|${r.status}|\n`;
+md+='\n*Author definition: reached TP1 before eventual closure. This is not net profitability.\n\n## What was checked\n\nIndependent Python implementation of source structure and FVG formulas; every sweep against its raw candle; every entry against stored setup/sweep/zone/risk evidence; prefix replay at every entry and ten other cutoffs per symbol. Prefix replay checks events, state, plotted entry/SL/targets, and HTF levels do not change when future data is appended.\n\n## Limits\n\n'+report.limitations.map(x=>'- '+x).join('\n')+'\n\nMissing and overnight candle gaps are retained; no candles are invented. Gap counts include normal market closures. Complete HTF buckets only. No native TradingView output export was available for exact full-engine parity.\n\nSource hash: '+report.sourceHash+'\n\nEngine hash: '+report.engineHash+'\n';
+fs.writeFileSync('docs/ict-engine-validation.md',md);if(failures)process.exitCode=1;

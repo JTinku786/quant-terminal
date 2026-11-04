@@ -1,0 +1,29 @@
+{
+  "retrieved": "2026-10-24",
+  "files": [
+    {
+      "path": "research/ict-structure-engine/original-v6.3.0.pine",
+      "bytes": 143124,
+      "lines": 2219,
+      "sha256": "a5815e7e4ba0a4447f4f56c4d7ee9236b2a140c565a54c2af41bec82f1cd8ee0"
+    },
+    {
+      "path": "research/forex-steward-market-structure/original.pine",
+      "bytes": 95741,
+      "lines": 2267,
+      "sha256": "18a02dcc9ca998fbb499dc15b8adf0f87c3f4096f501b9eadf4bc17e8e22def4"
+    },
+    {
+      "path": "research/luxalgo-liquidity/original.pine",
+      "bytes": 14661,
+      "lines": 348,
+      "sha256": "129297d1ad0d182cce0da32f9c5b66df09156aa88883ed395a9ea413e762caf8"
+    },
+    {
+      "path": "research/flux-order-blocks-volume-delta/original.pine",
+      "bytes": 35284,
+      "lines": 852,
+      "sha256": "0615e940e6b3986e359362088b01dbd30b0927ee22e693c031b6d2f2e88f7a74"
+    }
+  ]
+}

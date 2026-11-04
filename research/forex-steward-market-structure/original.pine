@@ -1,0 +1,2266 @@
+// This Pine Script® code is subject to the terShift of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © The_Forex_Steward
+
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//++++++++++++++++++++++++++++++++++++++ =======   JESUS IS KING   ======= +++++++++++++++++++++++++++++++++++++++++++++
+//++++++++++++++++++++++++++++++++++++++++++++++++++|\/\/\/\/\/|++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//++++++++++++++++++++++++++++++++++++++++++++++++++|          |++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//++++++++++++++++++++++++++++++++++++++++++++++++++|__________|++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++++++++++++++++++++++++++++++++++++++++++++++++++|        |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++++++++++++++++++++++++++++++++++++++++++++++++++|        |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++++++++++++++++++++++++++++++++++++++++++++++++++|        |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++++++++++++++++++++++++++++++++++++++++++|‾‾‾‾‾‾‾          ‾‾‾‾‾‾‾|+++++++++++++++++++++++++++++++++++++++++++++++++
+//+++++++++++++++++++++++++++++++++++++++++++|                        |+++++++++++++++++++++++++++++++++++++++++++++++++
+//+++++++++++++++++++++++++++++++++++++++++++|_______          _______|+++++++++++++++++++++++++++++++++++++++++++++++++
+//+++++++++++++++++++++++++++++++++++++++++++++++++++|        |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++++++++++++++++++++++++++++++++++++++++++++++++++|        |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++++++++++++++++++++++++++++++++++++++++++++++++++|        |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++++++++++++++++++++++++++++++++++++++++++++++++++|        |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++++++++++++++++++++++++++++++++++++++++++++++++++|        |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++++++++++++++++++++++++++++++++++++++++++++++++++|        |+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++++++++++++++++++++++++++++++++++++++++++++++++++|________|+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+//@version=6
+indicator("Market Structure- Zig Zag, BoS, Supply/Demand and Inflection Zones", overlay=true)
+import TradingView/ta/12
+
+// === User Inputs ========
+note = input.int(1, "****If you want to use CoCh zig-zag/swing labels and bos labels together I recommend opening the indicator twice and use the functions separately!!! Due to plotshape overload****", minval = 1, maxval = 1)
+note2 = input.int(1, "****If you use HTF timeframe, expect live updates on lower timeframes to produce improper results when plotting shapes live/bar replay. You MUST refresh lower timeframe charts in order to see accurate structures!!!****", minval = 1, maxval = 1)
+note3 = input.int(1, "*Author's Choice*: Version 9 (Regression MA), Threshold = 5, LTF SMA= 2, MTF SMA= 5, HTF SMA= 15", minval = 1, maxval = 1)
+htf = input.timeframe("", title="Timeframe")
+version = input.string ("Version 1 (Original, Smart Engulfments)", title = "Select Indicator Version (Internal Trigger)", options =["Version 1 (Original, Smart Engulfments)", "Version 2 (SMA)", "Version 3 (ATR)", "Version 4 (Displacement)", "Version 5 (Loopback)", "Version 6 (Area (Time x Price Difference))", "Version 7 (Candles)", "Version 8 (Institutional Order-Blocks)", "Version 9 (Regression MA)"])
+shiftMode = input.string("MTF", title="Calculate Zig-Zag By", options=["LTF", "MTF", "HTF"])
+shiftSource          = input.string("Close", "Internal Shift Source (Versions 1, 4 & 6)", options=["Close","Wick"])
+srcInput = input.string("HL2", title="Reversal Source for SMA (Version 2), Loopback (Version 5) and Version 9 (Regression MA)", options=["Open", "Close", "HL2", "HLC3", "OHLC4", "HLCC4"])
+MTFDisplacement = input.float(0.1, "Displacement Trigger Threshold (Versions 4 & 6)", step=0.0001)
+stallOffset = input.int(5, "Trigger Phase Loopback (Unit Measurement for Trigger)", minval= 1)
+smaLength = input.int(2, "SMA Close Breakout Length for LTF", minval = 1, tooltip = "Used to validate breakouts for Supply/Demand Zones and LTF structural breakouts.")
+smaLength2 = input.int(5, "SMA Close Breakout Length for MTF", minval = 1, tooltip = "Used to validate breakouts for MTF structural breakouts.")
+smaLength3 = input.int(15, "SMA Close Breakout Length for HTF", minval = 1, tooltip = "Used to validate breakouts for HTF structural breakouts.")
+
+showBearishOrderBlocks = input.bool(true, title="Show Bearish Order Blocks")
+showBullishOrderBlocks = input.bool(true, title="Show Bullish Order Blocks")
+showSupplyZones = input.bool(true, title="Show Supply Zones")
+showDemandZones = input.bool(true, title="Show Demand Zones")
+showBearishInflectionZones = input.bool(true, title="Show Bearish Inflection Zones")
+showBullishInflectionZones = input.bool(true, title="Show Bullish Inflection Zones")
+deleteMitigatedBoxes = input.bool(false, title="Delete Mitigated Zones")
+deleteBrokenBoxes= input.bool(false, title = "Delete Broken Zones")
+dimMitigatedBoxes = input.bool(true, title="Dim Mitigated Zones")
+fullZones = input.bool(false, title="Expand Boxes to Swing Highs/Lows")
+
+
+orderBlockDuration = input.int(3, title="Box Extension (500 bars max)")
+x = input.int(1, minval=1, maxval= 3, title="# of Candles for Order Blocks (1-3)")
+bearishBlockColor = input.color(color.rgb(0, 0, 0, 50), title="Bearish Order Block Color")
+bullishBlockColor = input.color(color.rgb(0, 0, 0, 50), title="Bullish Order Block Color")
+
+///=====lighter shades
+lighterBullishColor = color.new(bullishBlockColor, 85)  // More transparent
+lighterBearishColor = color.new(bearishBlockColor, 85)
+
+demandZoneColor = input.color(color.rgb(76, 175, 79, 50), title="Demand Zones Color")
+supplyZoneColor = input.color(color.rgb(255, 82, 82, 50), title="Supply Zones Color")
+
+bullishInflectionZoneColor = input.color(color.rgb(33, 149, 243, 50), title="Bullish Inflection Zones Color")
+bearishInflectionZoneColor = input.color(color.rgb(33, 149, 243, 50), title="Bearish Inflection Zones Color")
+
+///=====lighter shades
+lighterdemandZoneColor = color.new(demandZoneColor, 85)
+lightersupplyZoneColor = color.new(supplyZoneColor, 85)
+
+lighterBullishInflectionZoneColor = color.new(bullishInflectionZoneColor, 85)
+lighterBearishInflectionZoneColor = color.new(bearishInflectionZoneColor, 85)
+
+plotBoSLines = input.bool(true, title= "Show Break of Structure Lines")
+plotCHoCHLines = input.bool(true, title= "Show Change of Character Lines")
+plotLSLines = input.bool(true, title= "Show Liquidity Sweep Lines")
+plotLineLabels = input.bool(true, "Show Break/Sweep Line Labels")
+useMeasurements = input.bool(false, title="Use Quantitative Measurement Labels")
+
+zigzagLineWidth = input.int(2, title="Width of Lines", minval=1, maxval=10)
+bosLineStyle = input.string("Solid", title="BOS/CHoCH Line Style", options=["Solid", "Dotted", "Dashed"])
+bosBullishLineColor = input.color(color.green, title="Bullish BOS Line/Label Color")
+bosBearishLineColor = input.color(color.red, title="Bearish BOS Line/Label Color")
+bosLineStyleConst = bosLineStyle == "Solid" ? line.style_solid : bosLineStyle == "Dotted" ? line.style_dotted : line.style_dashed
+CHoCHColor = input.color(color.blue, title="Change of Character Line/Label Color")
+LSLineColor = input.color(color.orange, title="Liquidity Sweep Line/Label Color")
+
+plotZigZag = input.bool(true, title= "Plot Zig-Zag Lines")
+plotSwingLabels = input.bool(true, title= "Plot Swing High/Low Labels")
+useEfficiency = input.bool(false, "Use Expansion/Compression for Swing Label Color")
+zigzagLineColor = input.color(color.black, title="ZigZag Line Color")
+zigzagLineStyle = input.string("Solid", title="ZigZag Line Style", options=["Solid", "Dotted", "Dashed"])
+
+HHHLcolor = input.color(color.green, title="Text Color (HH and HL)")
+LLLHcolor = input.color(color.red, title="Text Color (LL and LH)")
+LScolor = input.color(color.orange, title="Text Color (LS)")
+HHHLcolorbg = input.color(color.rgb(76, 175, 79, 85), title="Background Color (HH and HL)")
+LLLHcolorbg = input.color(color.rgb(255, 82, 82, 85), title="Background Color (LL and LH)")
+LScolorbg = input.color(color.rgb(255, 153, 0, 85), title="Background Color (LS)")
+
+internalShiftColor = color.new(zigzagLineColor, 75)  // More transparent
+
+alertMode = input.int(1, title= "Enable/Disable for Any Alert() Function Call↓ Alert Status→", minval= 1, maxval= 1)
+alertShift = input.bool(true, title= "Bullish/Bearish Shift (Order Blocks for LTF or Supply & Demand Zones for MTF)")
+alertBoS = input.bool(true, title= "BoS")
+alertCHoCH = input.bool(true, title= "CHoCH")
+alertHighsandLows = input.bool(true, title= "Swing Highs & Lows")
+
+HtfOpen  = request.security(syminfo.tickerid, htf, open)
+HtfHigh  = request.security(syminfo.tickerid, htf, high)
+HtfLow   = request.security(syminfo.tickerid, htf, low)
+HtfClose = request.security(syminfo.tickerid, htf, close)
+HtfHL2   = request.security(syminfo.tickerid, htf, hl2)
+HtfHLC3  = request.security(syminfo.tickerid, htf, hlc3)
+HtfOHLC4 = request.security(syminfo.tickerid, htf, ohlc4)
+HtfHLCC4 = request.security(syminfo.tickerid, htf, hlcc4)
+
+float HtfSource = switch srcInput
+    "Open"  => HtfOpen
+    "Close" => HtfClose
+    "HL2"   => HtfHL2
+    "HLC3"  => HtfHLC3
+    "OHLC4" => HtfOHLC4
+    => HtfHLCC4
+
+// SMA of the selected HTF source
+smaSource = ta.sma(HtfSource, stallOffset)
+
+// SMA direction
+smaUp   = smaSource > smaSource[1]
+smaDown = smaSource < smaSource[1]
+
+smaClose = ta.sma(HtfClose, smaLength)
+smaClose2 = ta.sma(HtfClose, smaLength2)
+smaClose3 = ta.sma(HtfClose, smaLength3)
+
+
+prevHtfHigh = request.security(syminfo.tickerid, htf, high[1])
+prevHtfLow = request.security(syminfo.tickerid, htf, low[1])
+
+
+// =====================================================================
+// ========================== SYNTHETIC CANDLES =========================
+// =====================================================================
+
+var float lastBearishHigh = na
+var float lastBullishLow = na
+
+
+// =====================================================================
+// =========================== STALL DETECTION ==========================
+// =====================================================================
+
+
+
+// =====================================================================
+// ============================ BREAK SOURCE ============================
+// =====================================================================
+
+float breakerBullish = shiftSource == "Close" ? close : high
+float breakerBearish = shiftSource == "Close" ? close : low
+
+
+// =====================================================================
+// ======================= MTF STRUCTURE ===========================
+// =====================================================================
+
+var float extRunningHigh = na
+var float extRunningLow = na
+
+var bool extLastWasDemand = false
+var bool extFirstSignal = true
+
+var int demandIndex = na
+var int supplyIndex = na
+
+bool demandOccured = false
+bool supplyOccured = false
+
+var int lastSignal = 0
+
+var float runningLowestHigh = na
+var float runningHighestLow = na
+
+var float engulfedHigh = na
+var float engulfedLow = na
+
+var int lastBullIndex = na
+var int lastBearIndex = na
+
+var bool upTrigger = false
+var bool downTrigger = false
+
+
+// =====================================================================
+// ======================= SUPPLY / DEMAND ZONES ========================
+// =====================================================================
+
+var box[] bullishBoxes = array.new<box>()
+var box[] bearishBoxes = array.new<box>()
+
+var box[] demandZones = array.new<box>()
+var box[] supplyZones = array.new<box>()
+
+var box[] bullishInflectionZones = array.new<box>()
+var box[] bearishInflectionZones = array.new<box>()
+
+var bool bullishMitigated = false
+var bool bearishMitigated = false
+
+
+// =====================================================================
+// ======================= INTERNAL STRUCTURE ===========================
+// =====================================================================
+
+var int lastInternalShift = 0
+
+var float prevSwingHigh = na
+var float prevSwingLow = na
+
+var bool isHH = false
+var bool isHL = false
+var bool isLL = false
+var bool isLH = false
+
+var bool isLiquiditySweep = false
+
+
+// =====================================================================
+// ===================== INTERNAL SWING POINTS ==========================
+// =====================================================================
+
+var int lastSwingLowIndex = na
+var int lastSwingHighIndex = na
+
+var float lastSwingHigh = na
+var float lastSwingLow = na
+
+var float controlLocalHigh = na
+var float controlLocalLow = na
+
+var int controlLocalHighIndex = na
+var int controlLocalLowIndex = na
+
+var bool controlLowOccured = false
+var bool controlHighOccured = false
+
+
+// =====================================================================
+// ====================== INTERNAL SHIFT STATE ==========================
+// =====================================================================
+
+var int lastShiftType = na
+
+var bool plotLTFBearishShift = false
+var bool plotLTFBullishShift = false
+
+
+// =====================================================================
+// ================= INTERNAL SWING DISCOVERY ===========================
+// =====================================================================
+
+var float localHigh = na
+var int localHighIndex = na
+
+var float localLow = na
+var int localLowIndex = na
+
+maxHistory = 5000
+
+
+// =====================================================================
+// =================== MTF BREAK OF STRUCTURE ======================
+// =====================================================================
+
+var float lastBullishBoSPriceNA = na
+var float lastBearishBoSPriceNA = na
+
+var bool bullishBOSOccurred = false
+var bool bearishBOSOccurred = false
+
+
+var bool canBreakBullish = true
+var bool canBreakBearish = true
+
+var int lastBullishBoSBar = na
+var int lastBearishBoSBar = na
+
+
+// =====================================================================
+// ===================== MTF INFLECTION DATA =======================
+// =====================================================================
+
+var float bullInflectionHigh = na
+var float bearInflectionLow = na
+
+var int bullInflectionHighIndex = na
+var int bearInflectionLowIndex = na
+
+var int bullInflectionStartIndex = na
+var int bearInflectionStartIndex = na
+
+
+// =====================================================================
+// ====================== MTF DISPLACEMENT =========================
+// =====================================================================
+
+var float prevHighDisplacement = na
+var float prevLowDisplacement = na
+
+
+// =====================================================================
+// ========================== CHOCH ==============================
+// =====================================================================
+
+var int CHoCHCondtion = 0
+var bool canPlotCHoCH = false
+
+var line upCHoCHLine = na
+var line downCHoCHLine = na
+
+var label upCHochLabel = na
+var label downCHoCHLabel = na
+
+var float CHoCHHIGH = na
+var float CHoCHLOW = na
+
+var int MTFbullishCHoCHIndex = na
+var int MTFbearishCHoCHIndex = na
+
+
+// =====================================================================
+// ======================== BOS OBJECT STORAGE ==========================
+// =====================================================================
+
+var line lastBullBoSLine = na
+var label lastBullBoSLabel = na
+
+var line lastBearBoSLine = na
+var label lastBearBoSLabel = na
+
+
+// =====================================================================
+// ======================= MARKET SHIFT (Supply and Demand) ============
+// =====================================================================
+
+var float lastSwingHigh2 = na
+var float lastSwingLow2 = na
+
+var float ShiftLocalLow = na
+var int ShiftLocalLowIndex = na
+
+var float ShiftLocalHigh = na
+var int ShiftLocalHighIndex = na
+
+var bool bullishBOSOccurredShift = false
+var bool bearishBOSOccurredShift = false
+
+var bool isLiquiditySweepMTF = false
+
+var bool canBreakMTFBullishShift = true
+var bool canBreakMTFBearishShift = true
+
+
+// =====================================================================
+// ====================== EARLY MARKET SHIFT UI =========================
+// =====================================================================
+
+var box earlyBullShiftBox = na
+var box earlyBearShiftBox = na
+
+var label earlyBullShiftLabel = na
+var label earlyBearShiftLabel = na
+
+var float earlyBullShiftLow = na
+var float earlyBearShiftHigh = na
+
+
+// =====================================================================
+// ===================== MTF STRUCTURE SWINGS ======================
+// =====================================================================
+
+var float lastExtSwingHigh = na
+var float lastExtSwingLow = na
+
+var int lastExtSwingHighIndex = na
+var int lastExtSwingLowIndex = na
+
+
+//========================================================================
+//==================== HTF SWING HIGH/LOW VARIABLES=======================
+//=========================================================================
+
+//===Swing Highs
+var float HTFLocalHigh = na
+var int HTFLocalHighIndex = na
+
+var float previousHTFLocalHigh = na
+var int previousHTFLocalHighIndex = na
+
+//===Swing Lows
+var float HTFLocalLow = na
+var int HTFLocalLowIndex = na
+
+var float previousHTFLocalLow = na
+var int previousHTFLocalLowIndex = na
+
+//=== Swing State
+var float lastHTFShiftType = 0
+
+// =====================================================================
+// ============================== ALERTS ================================
+// =====================================================================
+
+var bool bullishShiftOccurredAlert = false
+var bool bearishShiftOccurredAlert = false
+
+var bool bullishBoSOcurredAlert = false
+var bool bearishBoSOcurredAlert = false
+
+var bool bearishCHoCHOccurredAlert = false
+var bool bullishCHoCHOccurredAlert = false
+
+
+var bool HHOccurredAlert = false 
+var bool LHOccurredAlert = false
+var bool LLOccurredAlert = false
+var bool HLOccurredAlert = false
+var bool LSOccurredAlert = false
+
+
+// =====================================================================
+// ============================== TRIGGER FUNCTIONS ====================
+// =====================================================================
+
+// === Area =================================
+// ─────────────────────────────────────────────
+// Price Range
+// ─────────────────────────────────────────────
+highestPrice = ta.highest(HtfHigh, stallOffset)
+lowestPrice  = ta.lowest(HtfLow, stallOffset)
+
+priceDifference = highestPrice - lowestPrice
+
+// ─────────────────────────────────────────────
+// Direction
+// ─────────────────────────────────────────────
+direction = HtfClose >= HtfClose[stallOffset] ? 1 : -1
+
+// ─────────────────────────────────────────────
+// Signed Area
+// ─────────────────────────────────────────────
+area = stallOffset * priceDifference * direction
+
+isPos = area > 0
+isNeg = area < 0
+
+
+// === Regression MA ========================
+
+regLine = ta.linreg(HtfSource, stallOffset, 0)
+
+regUp = regLine > regLine[1] 
+regDown = regLine < regLine[1]
+
+// === Institutional Order Blocks === 
+
+var float bullOBHigh = na 
+var float bullOBLow = na 
+var int bullOBIndex = na
+
+var float bearOBHigh = na
+var float bearOBLow = na
+var int bearOBIndex = na
+
+if HtfClose < HtfOpen 
+    bullOBHigh := HtfHigh 
+    bullOBLow := HtfLow 
+    bullOBIndex := bar_index
+
+if HtfClose > HtfOpen
+    bearOBLow := HtfLow
+    bearOBHigh := HtfHigh
+    bearOBIndex := bar_index
+
+bullishOB = HtfClose > bullOBHigh
+bearishOB = HtfClose < bearOBLow
+
+// === SMA OPEN/CLOSE DIRECTION TRIGGERS ===
+
+
+// === ATR ===
+
+atr      = ta.atr(stallOffset)
+atrAvg   = ta.sma(atr, stallOffset)
+
+atrExpanding = atr > atrAvg
+
+upATR   = atrExpanding and close > open and close > high[1]
+downATR = atrExpanding and close < open and close < low[1]
+
+// === Loopback ===
+
+downStall   = HtfSource == ta.lowest(HtfSource, stallOffset)
+upStall = HtfSource == ta.highest(HtfSource, stallOffset)
+
+// === Displacement ===
+
+if na(extRunningHigh)
+    extRunningHigh := high
+    extRunningLow  := low
+
+extRunningHigh := math.max(extRunningHigh, high)
+extRunningLow  := math.min(extRunningLow, low)
+
+if extFirstSignal or not extLastWasDemand
+    if breakerBullish > extRunningLow + MTFDisplacement and close > open
+        demandOccured   := true
+        extLastWasDemand := true
+        extFirstSignal   := false
+        extRunningHigh   := high
+        extRunningLow    := low
+        demandIndex      := bar_index
+
+if extFirstSignal or extLastWasDemand
+    if breakerBearish < extRunningHigh - MTFDisplacement and close < open
+        supplyOccured   := true
+        extLastWasDemand := false
+        extFirstSignal   := false
+        extRunningHigh   := high
+        extRunningLow    := low
+        supplyIndex      := bar_index
+
+if demandOccured 
+    supplyOccured := false 
+if supplyOccured 
+    demandOccured := false
+
+//=== ORIGINAL (SMART ENGULFMENTS) ===
+var bool newBear = false 
+var bool newBull = false
+
+// Step 1: Detect "starter" Smart Engulfments 
+starterBull = HtfClose[1] < HtfOpen[1] and HtfClose > HtfOpen and HtfClose > HtfHigh[1]
+starterBear = HtfClose[1] > HtfOpen[1] and HtfClose < HtfOpen and HtfClose < HtfLow[1]
+
+if lastSignal == 0
+    if starterBull
+        lastSignal       := 1
+        runningHighestLow := HtfLow
+        engulfedHigh     := HtfHigh[1]
+        engulfedLow      := HtfLow[1]
+    else if starterBear
+        lastSignal       := -1
+        runningLowestHigh := HtfHigh
+        engulfedHigh     := HtfHigh[1]
+        engulfedLow      := HtfLow[1]
+
+// Step 2: Update running references 
+if lastSignal == -1   
+    runningLowestHigh := na(runningLowestHigh) ? HtfHigh : math.min(runningLowestHigh, HtfHigh)
+else if lastSignal == 1  
+    runningHighestLow := na(runningHighestLow) ? HtfLow : math.max(runningHighestLow, HtfLow)
+
+// Step 3: Check for new engulfment
+if shiftSource == "Close" 
+    newBull := lastSignal == -1 and not na(runningLowestHigh) and HtfClose > runningLowestHigh
+    newBear := lastSignal == 1 and not na(runningHighestLow) and HtfClose < runningHighestLow
+if shiftSource == "Wick" 
+    newBull := HtfHigh > HtfHigh[1] 
+    newBear := HtfLow < HtfLow[1]
+    
+if newBull
+    engulfedHigh  := runningLowestHigh
+    engulfedLow   := HtfLow[1] 
+
+if newBear
+    engulfedLow   := runningHighestLow
+    engulfedHigh  := HtfHigh[1]
+
+// Step 4: Confirm and flip state 
+if newBull
+    lastSignal       := 1
+    runningLowestHigh := na
+    runningHighestLow := HtfLow
+else if newBear
+    lastSignal       := -1
+    runningHighestLow := na
+    runningLowestHigh := HtfHigh
+
+//=== CANDLES ===
+var bool bullishCandle = false
+var bool bearishCandle = false
+
+if shiftSource == "Close"
+    bullishCandle := HtfOpen < HtfClose 
+    bearishCandle := HtfOpen > HtfClose
+if shiftSource == "Wick"
+    bullishCandle := (HtfHigh - HtfOpen) > (HtfOpen - HtfLow)
+    bearishCandle := (HtfHigh - HtfOpen) < (HtfOpen - HtfLow)
+
+//=== TRIGGER DECLARATIONS ===
+
+if version == "Version 1 (Original, Smart Engulfments)"
+    upTrigger := newBull
+    downTrigger := newBear
+
+if version == "Version 2 (SMA)"
+    upTrigger := smaUp
+    downTrigger := smaDown
+
+if version == "Version 3 (ATR)"
+    upTrigger := upATR
+    downTrigger := downATR
+
+if version == "Version 4 (Displacement)"
+    upTrigger := demandOccured
+    downTrigger := supplyOccured
+
+if version == "Version 5 (Loopback)"
+    upTrigger := upStall
+    downTrigger := downStall
+if version == "Version 6 (Area (Time x Price Difference))"
+    upTrigger := isPos
+    downTrigger := isNeg
+
+if version == "Version 7 (Candles)"
+    upTrigger := bullishCandle
+    downTrigger := bearishCandle
+
+if version == "Version 8 (Institutional Order-Blocks)"
+    upTrigger := bullishOB
+    downTrigger := bearishOB
+
+if version == "Version 9 (Regression MA)"
+    upTrigger := regUp
+    downTrigger := regDown
+
+// =====================================================================
+// ========================== LTF SHIFT FUNCTIONS =================
+// =====================================================================
+
+// === Internal Shift Declaration ===
+internalShiftBullish = upTrigger
+internalShiftBearish = downTrigger
+
+if internalShiftBullish
+    lastBullIndex := bar_index[1]
+if internalShiftBearish 
+    lastBearIndex := bar_index[1]
+
+allowInternalShiftBearish = internalShiftBearish and lastInternalShift != -1
+allowInternalShiftBullish = internalShiftBullish and lastInternalShift != 1
+
+plotLTFBearishShift := false
+plotLTFBullishShift := false
+
+if allowInternalShiftBearish
+    plotLTFBearishShift := true
+    lastInternalShift := -1
+
+if allowInternalShiftBullish
+    plotLTFBullishShift := true
+    lastInternalShift := 1
+
+// === Plot internal shift markers ==
+plotshape(plotLTFBullishShift, title="Bullish LTF Shift", location=location.belowbar, color=internalShiftColor, style=shape.triangleup, size=size.tiny)
+plotshape(plotLTFBearishShift, title="Bearish LTF Shift", location=location.abovebar, color=internalShiftColor, style=shape.triangledown, size=size.tiny)
+
+
+// =====================================================================
+// ========================== BOX CREATING/TRACKING ====================
+// =====================================================================
+
+// === Delete invalidated boxes ===
+if deleteBrokenBoxes
+    if array.size(bullishBoxes) > 0
+        for i = array.size(bullishBoxes) - 1 to 0
+            boxItem = array.get(bullishBoxes, i)
+            if HtfClose < box.get_bottom(boxItem)
+                box.delete(boxItem)
+                array.remove(bullishBoxes, i)
+
+    if array.size(bearishBoxes) > 0
+        for i = array.size(bearishBoxes) - 1 to 0
+            boxItem = array.get(bearishBoxes, i)
+            if HtfClose > box.get_top(boxItem)
+                box.delete(boxItem)
+                array.remove(bearishBoxes, i)
+
+    if array.size(demandZones) > 0
+        for i = array.size(demandZones) - 1 to 0
+            boxItem = array.get(demandZones, i)
+            if HtfClose < box.get_bottom(boxItem)
+                box.delete(boxItem)
+                array.remove(demandZones, i)
+
+    if array.size(supplyZones) > 0
+        for i = array.size(supplyZones) - 1 to 0
+            boxItem = array.get(supplyZones, i)
+            if HtfClose > box.get_top(boxItem)
+                box.delete(boxItem)
+                array.remove(supplyZones, i)
+
+// === Delete mitigated boxes (optional) ===
+if deleteMitigatedBoxes
+    if array.size(bullishBoxes) > 0
+        for i = array.size(bullishBoxes) - 1 to 0
+            boxItem = array.get(bullishBoxes, i)
+            if HtfLow < box.get_top(boxItem)
+                bullishMitigated := true
+                box.delete(boxItem)
+                array.remove(bullishBoxes, i)
+    if array.size(bearishBoxes) > 0
+        for i = array.size(bearishBoxes) - 1 to 0
+            boxItem = array.get(bearishBoxes, i)
+            if HtfHigh > box.get_bottom(boxItem)
+                bearishMitigated := true
+                box.delete(boxItem)
+                array.remove(bearishBoxes, i)
+
+    if array.size(demandZones) > 0
+        for i = array.size(demandZones) - 1 to 0
+            boxItem = array.get(demandZones, i)
+            if HtfLow < box.get_top(boxItem)
+                box.delete(boxItem)
+                array.remove(demandZones, i)
+
+    if array.size(supplyZones) > 0
+        for i = array.size(supplyZones) - 1 to 0
+            boxItem = array.get(supplyZones, i)
+            if HtfHigh > box.get_bottom(boxItem)
+                box.delete(boxItem)
+                array.remove(supplyZones, i)
+
+// === Dim Mitigated Boxes ===
+if dimMitigatedBoxes
+    if array.size(bullishBoxes) > 0
+        for i = 0 to array.size(bullishBoxes) - 1
+            boxItem = array.get(bullishBoxes, i)
+            if HtfLow < box.get_top(boxItem)
+                bullishMitigated := true
+                box.set_bgcolor(boxItem, lighterBullishColor)
+                box.set_border_color(boxItem, lighterBullishColor)
+
+    if array.size(bearishBoxes) > 0
+        for i = 0 to array.size(bearishBoxes) - 1
+            boxItem = array.get(bearishBoxes, i)
+            if HtfHigh > box.get_bottom(boxItem)
+                bearishMitigated := true
+                box.set_bgcolor(boxItem, lighterBearishColor)
+                box.set_border_color(boxItem, lighterBearishColor)
+
+    if array.size(demandZones) > 0
+        for i = 0 to array.size(demandZones) - 1
+            boxItem = array.get(demandZones, i)
+            if HtfLow < box.get_top(boxItem)
+                box.set_bgcolor(boxItem, lighterdemandZoneColor)
+                box.set_border_color(boxItem, lighterdemandZoneColor)
+
+    if array.size(supplyZones) > 0
+        for i = 0 to array.size(supplyZones) - 1
+            boxItem = array.get(supplyZones, i)
+            if HtfHigh > box.get_bottom(boxItem)
+                box.set_bgcolor(boxItem, lightersupplyZoneColor)
+                box.set_border_color(boxItem, lightersupplyZoneColor)
+
+    if array.size(bullishInflectionZones) > 0
+        for i = 0 to array.size(bullishInflectionZones) - 1
+            boxItem = array.get(bullishInflectionZones, i)
+            if HtfLow < box.get_top(boxItem)
+                box.set_bgcolor(boxItem, lighterBullishInflectionZoneColor)
+                box.set_border_color(boxItem, lighterdemandZoneColor)
+
+    if array.size(bearishInflectionZones) > 0
+        for i = 0 to array.size(bearishInflectionZones) - 1
+            boxItem = array.get(bearishInflectionZones, i)
+            if HtfHigh > box.get_bottom(boxItem)
+                box.set_bgcolor(boxItem, lighterBearishInflectionZoneColor)
+                box.set_border_color(boxItem, lightersupplyZoneColor)
+
+// === Peramters for boxes ===
+zoneHigh = ta.highest(HtfHigh[1], x)
+zoneLow = ta.lowest(HtfLow[1], x)
+
+controlHighOccured := false 
+controlLowOccured := false 
+
+
+// =====================================================================
+// ========================== LTF SWING LEVELS =========================
+// =====================================================================
+
+// === Swing Highs ===
+if plotLTFBearishShift 
+    float highestHigh = na
+    int highestIndex = na
+    int startIndex = math.max(lastBullIndex, bar_index - maxHistory)
+    int endIndex = bar_index
+
+    for i = startIndex to endIndex
+        int lookback = bar_index - i  // Convert i to relative offset for series access
+        if lookback >= 0 and lookback < maxHistory and not na(HtfHigh[lookback])
+            if na(highestHigh) or HtfHigh[lookback] > highestHigh
+                highestHigh := HtfHigh[lookback]
+                highestIndex := i
+
+    lastSwingHigh := localHigh
+    lastSwingHighIndex := localHighIndex
+    localHigh := highestHigh
+    localHighIndex := highestIndex
+    if lastShiftType == 1
+        controlLocalHigh := localHigh
+        controlLocalHighIndex := localHighIndex
+        controlHighOccured := true
+    if localHigh < lastSwingHigh
+        controlLocalHigh := localHigh
+        controlLocalHighIndex := localHighIndex
+        controlHighOccured := true
+
+// === Swing Lows ===
+if plotLTFBullishShift 
+    float lowestLow = na
+    int lowestIndex = na
+    int startIndex = math.max(lastBearIndex, bar_index - maxHistory)
+    int endIndex = bar_index
+
+    for i = startIndex to endIndex
+        int lookback = bar_index - i  // Convert i to relative offset
+        if lookback >= 0 and lookback < maxHistory and not na(HtfLow[lookback])
+            if na(lowestLow) or HtfLow[lookback] < lowestLow
+                lowestLow := HtfLow[lookback]
+                lowestIndex := i
+
+    lastSwingLow := localLow
+    lastSwingLowIndex := localLowIndex
+    localLow := lowestLow
+    localLowIndex := lowestIndex
+    if lastShiftType == -1
+        controlLocalLow := localLow
+        controlLocalLowIndex := localLowIndex
+        controlLowOccured := true
+    if localLow > lastSwingLow
+        controlLocalLow := localLow
+        controlLocalLowIndex := localLowIndex
+        controlLowOccured := true
+
+// === Create new order blocks with adjusted alignment ===
+var float orderBlockLow = na 
+var float orderBlockHigh = na
+
+var int bullBlockIndex = na 
+var int bearBlockIndex = na 
+
+if fullZones
+    orderBlockLow := localLow
+    orderBlockHigh := localHigh
+
+    bullBlockIndex := localLowIndex
+    bearBlockIndex := localHighIndex
+else
+    orderBlockLow := zoneLow
+    orderBlockHigh := zoneHigh
+
+    if version != "Version 8 (Institutional Order-Blocks)"
+        bullBlockIndex := bar_index[x]
+        bearBlockIndex := bar_index[x]
+    if version == "Version 8 (Institutional Order-Blocks)"
+        bullBlockIndex := bullOBIndex
+        bearBlockIndex := bearOBIndex
+
+if version != "Version 8 (Institutional Order-Blocks)"
+    if plotLTFBullishShift and showBullishOrderBlocks
+        bullishBox = box.new(left= bullBlockIndex, right= bar_index + orderBlockDuration, top=zoneHigh, bottom=orderBlockLow, border_color=bullishBlockColor, bgcolor=bullishBlockColor, border_width = zigzagLineWidth)
+        array.push(bullishBoxes, bullishBox)
+
+    if plotLTFBearishShift and showBearishOrderBlocks
+        bearishBox = box.new(left= bearBlockIndex, right= bar_index + orderBlockDuration, top=orderBlockHigh, bottom=zoneLow, border_color=bearishBlockColor, bgcolor=bearishBlockColor, border_width = zigzagLineWidth)
+        array.push(bearishBoxes, bearishBox)
+
+if version == "Version 8 (Institutional Order-Blocks)"
+    if plotLTFBullishShift and showBullishOrderBlocks and version == "Version 8 (Institutional Order-Blocks)"
+        bullishBox = box.new(left= bullBlockIndex, right= bar_index + orderBlockDuration, top=bullOBHigh, bottom=bullOBLow, border_color=bullishBlockColor, bgcolor=bullishBlockColor, border_width = zigzagLineWidth)
+        array.push(bullishBoxes, bullishBox)
+
+    if plotLTFBearishShift and showBearishOrderBlocks
+        bearishBox = box.new(left= bearBlockIndex, right= bar_index + orderBlockDuration, top=bearOBHigh, bottom=bearOBLow, border_color=bearishBlockColor, bgcolor=bearishBlockColor, border_width = zigzagLineWidth)
+        array.push(bearishBoxes, bearishBox)
+
+
+// =====================================================================
+// ========================== LTF BREAK OF STRUCTURE FUNCTIONS==========
+// =====================================================================
+
+bullishBoS = canBreakBullish and smaClose > localHigh
+bearishBoS = canBreakBearish and smaClose < localLow
+
+bearInflectionHigh = ta.highestSince(bullishBoS, high)
+bullInflectionLow = ta.lowestSince(bearishBoS, low)
+
+if bullishBoS
+    lastBullishBoSPriceNA := HtfClose
+    canBreakBullish := false
+    bullishBOSOccurred := true
+    if plotBoSLines and shiftMode == "LTF" 
+        lastBullBoSLine := line.new(x1=localHighIndex, y1=localHigh, x2=bar_index, y2=localHigh, color=bosBullishLineColor, width=zigzagLineWidth, style=bosLineStyleConst)
+        midX = math.floor((localHighIndex + bar_index)/2)
+        if plotLineLabels 
+            widthBars = bar_index - localHighIndex
+            labelText = useMeasurements ? str.tostring(widthBars) : "BoS"
+            lastBullBoSLabel := label.new(x=midX, y=localHigh, text=labelText, color=color.rgb(255, 82, 82, 100), textcolor=bosBullishLineColor, style=label.style_label_down, size=size.tiny)
+
+    // Track inflection points
+    bearInflectionLow  := localLow
+    bearInflectionStartIndex := localHighIndex
+    bearInflectionLowIndex := localLowIndex
+
+if bearishBoS
+    lastBearishBoSPriceNA := HtfClose
+    canBreakBearish := false
+    bearishBOSOccurred := true
+    if plotBoSLines and shiftMode == "LTF" 
+        lastBearBoSLine := line.new(x1=localLowIndex, y1=localLow, x2=bar_index, y2=localLow, color=bosBearishLineColor, width=zigzagLineWidth, style=bosLineStyleConst)    
+        midX = math.floor((localLowIndex + bar_index)/2)
+        if plotLineLabels
+            widthBars = bar_index - localLowIndex
+            labelText = useMeasurements ? str.tostring(widthBars) : "BoS"
+            lastBearBoSLabel := label.new(x=midX, y=localLow, text=labelText, color=color.rgb(255, 82, 82, 100), textcolor=bosBearishLineColor, style=label.style_label_up, size=size.tiny)   
+
+    // Track inflection points
+    bullInflectionHigh := localHigh
+    bullInflectionStartIndex := localLowIndex
+    bullInflectionHighIndex := localHighIndex
+
+
+// Reset logic — allow new break only if local high/low changes
+if ta.change(localHigh) != 0
+    canBreakBullish := true
+if ta.change(localLow) != 0
+    canBreakBearish := true
+
+
+// =====================================================================
+// ========================== MTF SHIFT FUNCTIONS=======================
+// =====================================================================
+
+// === Enforce Alternation ===
+canMTFBullishShift = na(lastShiftType) or lastShiftType != 1
+canMTFBearishShift = na(lastShiftType) or lastShiftType != -1
+
+MTFBullishShift = not na(bullInflectionHigh) and canMTFBullishShift and smaClose > controlLocalHigh
+MTFBearishShift = not na(bearInflectionLow) and canMTFBearishShift and smaClose < controlLocalLow
+
+// === Shift Detection Logic Using BoS Inflection Points ===
+
+unconfirmedBullShift = not na(bullInflectionHigh) and canMTFBullishShift and ta.crossover(HtfClose, controlLocalHigh)
+unconfirmedBearShift = not na(bearInflectionLow) and canMTFBearishShift and ta.crossunder(HtfClose, controlLocalLow)
+
+if unconfirmedBearShift and showDemandZones
+    box.delete(earlyBearShiftBox), label.delete(earlyBearShiftLabel), earlyBearShiftBox := box.new(left=controlLocalLowIndex, right=bar_index + orderBlockDuration, top=localHigh, bottom=controlLocalLow, bgcolor=color.rgb(120, 123, 134, 50), border_color=supplyZoneColor, border_width=zigzagLineWidth), earlyBearShiftLabel := label.new(x=math.floor((controlLocalLowIndex + (bar_index + orderBlockDuration)) / 2), y=controlLocalLow, text="Pending", style=label.style_label_up, textcolor=color.rgb(120, 123, 134, 0), color=color.new(color.black, 100), size=size.small)
+    earlyBearShiftHigh := localHigh
+if unconfirmedBullShift and showSupplyZones
+    box.delete(earlyBullShiftBox), label.delete(earlyBullShiftLabel), earlyBullShiftBox := box.new(left=controlLocalHighIndex, right=bar_index + orderBlockDuration, top=controlLocalHigh, bottom=localLow, bgcolor=color.rgb(120, 123, 134, 50), border_color=demandZoneColor, border_width=zigzagLineWidth), earlyBullShiftLabel := label.new(x=math.floor((controlLocalHighIndex + (bar_index + orderBlockDuration)) / 2), y=controlLocalHigh, text="Pending", style=label.style_label_down, textcolor=color.rgb(120, 123, 134, 0), color=color.new(color.black, 100), size=size.small)
+    earlyBullShiftLow := localLow
+
+if ta.crossover(smaClose, earlyBearShiftHigh) or supplyOccured
+    box.delete(earlyBearShiftBox)
+    label.delete(earlyBearShiftLabel)
+if ta.crossunder(smaClose, earlyBullShiftLow) or demandOccured
+    box.delete(earlyBullShiftBox)
+    label.delete(earlyBullShiftLabel)
+
+plotshape(MTFBullishShift, title="Bullish MTF Shift", location=location.belowbar, color=zigzagLineColor, style=shape.triangleup, size=size.tiny)
+plotshape(MTFBearishShift, title="Bearish MTF Shift", location=location.abovebar, color=zigzagLineColor, style=shape.triangledown, size=size.tiny)
+
+
+// =====================================================================
+// ========================== MTF SWING HIGH/LOW FUNCTIONS==============
+// =====================================================================
+
+var box lastDemandZone = na 
+var box lastSupplyZone = na 
+
+var float bullishInflectionHigh = na 
+var float bullishInflectionLow = na 
+var int bullishInflectionLeft = na 
+var int bullishInflectionRight = na 
+
+var float bearishInflectionHigh = na 
+var float bearishInflectionLow = na 
+var int bearishInflectionLeft = na 
+var int bearishInflectionRight = na 
+
+// Supply/demand zone perameters
+var float supplyHigh = na 
+var float demandLow = na 
+
+var int supplyZoneIndex = na 
+var int demandZoneIndex = na 
+
+zoneHigh2 = ta.highestSince(controlLowOccured, high)
+zoneLow2 = ta.lowestSince(controlHighOccured, low)
+
+// === Swing Highs ===
+if MTFBearishShift
+    float ShiftHighestHigh = na
+    int ShiftHighestIndex = na
+    int ShiftStartIndex = na(lastBullishBoSBar) ? bar_index - maxHistory : ShiftLocalLowIndex
+    int ShiftEndIndex = bar_index
+
+    for i = ShiftStartIndex to ShiftEndIndex
+        int ShiftLookback = bar_index - i
+        if ShiftLookback >= 0 and ShiftLookback < maxHistory and not na(HtfHigh[ShiftLookback])
+            if na(ShiftHighestHigh) or HtfHigh[ShiftLookback] > ShiftHighestHigh
+                ShiftHighestHigh := HtfHigh[ShiftLookback]
+                ShiftHighestIndex := i
+
+    lastExtSwingHigh := ShiftLocalHigh
+    lastExtSwingHighIndex := ShiftLocalHighIndex
+    ShiftLocalHigh := ShiftHighestHigh
+    ShiftLocalHighIndex := ShiftHighestIndex
+
+    lastShiftType := -1
+    lastBearishBoSBar := bar_index
+
+// === Swing Lows ===
+if MTFBullishShift
+    float ShiftLowestLow = na
+    int ShiftLowestIndex = na
+    int ShiftStartIndex = na(lastBearishBoSBar) ? bar_index - maxHistory : ShiftLocalHighIndex
+    int ShiftEndIndex = bar_index  // safer than using bar_index unless defined
+
+    for i = ShiftStartIndex to ShiftEndIndex
+        int ShiftLookback = bar_index - i
+        if ShiftLookback >= 0 and ShiftLookback < maxHistory and not na(HtfLow[ShiftLookback])
+            if na(ShiftLowestLow) or HtfLow[ShiftLookback] < ShiftLowestLow
+                ShiftLowestLow := HtfLow[ShiftLookback]
+                ShiftLowestIndex := i
+
+    lastExtSwingLow := ShiftLocalLow
+    lastExtSwingLowIndex := ShiftLocalLowIndex
+    ShiftLocalLow := ShiftLowestLow
+    ShiftLocalLowIndex := ShiftLowestIndex
+
+    lastShiftType := 1
+    lastBullishBoSBar := bar_index
+
+
+if fullZones 
+    supplyHigh := ShiftLocalHigh 
+    demandLow := ShiftLocalLow
+    supplyZoneIndex := ShiftLocalHighIndex
+    demandZoneIndex := ShiftLocalLowIndex
+else 
+    supplyHigh := zoneHigh2 
+    demandLow := zoneLow2 
+    supplyZoneIndex := controlLocalHighIndex
+    demandZoneIndex := controlLocalLowIndex
+
+if MTFBearishShift
+    if showSupplyZones
+        box.delete(earlyBearShiftBox)
+        label.delete(earlyBearShiftLabel)
+        lastSupplyZone := box.new(left = controlLocalLowIndex, right = bar_index + orderBlockDuration, top = supplyHigh, bottom = controlLocalLow, bgcolor = supplyZoneColor, border_color = supplyZoneColor, border_width = zigzagLineWidth)
+        array.push(supplyZones, lastSupplyZone)
+
+    if plotCHoCHLines and shiftMode == "LTF"
+        downCHoCHLine := line.new(x1=localLowIndex, y1=localLow, x2=bar_index, y2=localLow, color=CHoCHColor, width=zigzagLineWidth, style=bosLineStyleConst)    
+        midX = math.floor((localLowIndex + bar_index)/2)
+        if plotLineLabels
+            widthBars = bar_index - localLowIndex
+            labelText = useMeasurements ? str.tostring(widthBars) : "CHoCH"
+            downCHoCHLabel := label.new(x=midX, y=localLow, text=labelText, color=color.rgb(255, 82, 82, 100), textcolor=CHoCHColor, style=label.style_label_up, size=size.tiny)
+
+    if not na(lastBearBoSLine) and plotCHoCHLines
+        line.delete(lastBearBoSLine)
+        lastBearBoSLine := na
+    if not na(lastBearBoSLabel) and plotCHoCHLines
+        label.delete(lastBearBoSLabel)
+        lastBearBoSLabel := na
+
+    //Inflection Zone perameters
+    bullishInflectionHigh := supplyHigh
+    bullishInflectionLow := controlLocalLow
+    bullishInflectionLeft := supplyZoneIndex
+    bullishInflectionRight := bar_index
+
+if MTFBullishShift
+    if showDemandZones
+        box.delete(earlyBullShiftBox)
+        label.delete(earlyBullShiftLabel)
+        lastDemandZone := box.new(left = controlLocalHighIndex, right = bar_index + orderBlockDuration,top = controlLocalHigh, bottom = demandLow, bgcolor = demandZoneColor, border_color = demandZoneColor, border_width = zigzagLineWidth)
+        array.push(demandZones, lastDemandZone)
+
+    if plotCHoCHLines and shiftMode == "LTF"
+        upCHoCHLine := line.new(x1=localHighIndex, y1=localHigh, x2=bar_index, y2=localHigh, color=CHoCHColor, width=zigzagLineWidth, style=bosLineStyleConst)    
+        midX = math.floor((localHighIndex + bar_index)/2)
+        if plotLineLabels
+            widthBars = bar_index - localHighIndex
+            labelText = useMeasurements ? str.tostring(widthBars) : "CHoCH"
+            upCHochLabel := label.new(x=midX, y=localHigh, text=labelText, color=color.rgb(255, 82, 82, 100), textcolor=CHoCHColor, style=label.style_label_down, size=size.tiny)
+
+    if not na(lastBullBoSLine) and plotCHoCHLines
+        line.delete(lastBullBoSLine)
+        lastBullBoSLine := na
+    if not na(lastBullBoSLabel) and plotCHoCHLines
+        label.delete(lastBullBoSLabel)
+        lastBullBoSLabel := na
+
+    // Inflection Zone parameters
+    bearishInflectionHigh := controlLocalHigh
+    bearishInflectionLow := demandLow
+    bearishInflectionLeft := demandZoneIndex
+    bearishInflectionRight := bar_index
+
+
+// =====================================================================
+// ========================== MTF BREAK OF STRUCTURE 1 FUNCTIONS========
+// =====================================================================
+
+// BoS Conditions (non-alternating)
+MTFBullishBoS = smaClose2 > ShiftLocalHigh
+MTFBearishBoS = smaClose2 < ShiftLocalLow
+
+if MTFBullishBoS
+    bullishBOSOccurredShift := true
+
+if MTFBearishBoS
+    bearishBOSOccurredShift := true
+
+
+// =====================================================================
+// ========================== ZIGZAG AND SWINGHIGH PLOTS ===============
+// =====================================================================
+if plotLTFBullishShift and shiftMode == "LTF"
+
+    // Plot zigzag line for LL and HL separately
+    if not na(prevSwingLow) and plotZigZag
+        if localLow < prevSwingLow  // LL
+            if zigzagLineStyle == "Solid"
+                line.new(x1=localHighIndex, y1=localHigh, x2=localLowIndex, y2=localLow, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_solid)
+            else if zigzagLineStyle == "Dotted"
+                line.new(x1=localHighIndex, y1=localHigh, x2=localLowIndex, y2=localLow, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dotted)
+            else if zigzagLineStyle == "Dashed"
+                line.new(x1=localHighIndex, y1=localHigh, x2=localLowIndex, y2=localLow, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dashed)
+
+        else  // HL
+            if zigzagLineStyle == "Solid"
+                line.new(x1=localHighIndex, y1=localHigh, x2=localLowIndex, y2=localLow, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_solid)
+            else if zigzagLineStyle == "Dotted"
+                line.new(x1=localHighIndex, y1=localHigh, x2=localLowIndex, y2=localLow, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dotted)
+            else if zigzagLineStyle == "Dashed"
+                line.new(x1=localHighIndex, y1=localHigh, x2=localLowIndex, y2=localLow, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dashed)
+
+    // Swing classification
+    if not na(prevSwingLow)
+        isLL := localLow < prevSwingLow
+        isHL := localLow > prevSwingLow
+
+    // =========================
+    // DISPLACEMENT COMPARISON
+    // =========================
+    height = math.abs(localHigh - localLow)
+
+    lowGreen = na(prevLowDisplacement) ? true : height < prevLowDisplacement
+
+    expansionBg = lowGreen ? HHHLcolorbg : LLLHcolorbg
+
+    expansionText = lowGreen ? HHHLcolor : LLLHcolor
+
+    // =========================
+    // LL / LS LABEL
+    // =========================
+    if isLL
+
+        labelText = useMeasurements ? str.tostring(height) : "LL"
+
+        if bearishBOSOccurred
+            if plotSwingLabels
+                label.new(
+                     localLowIndex,
+                     localLow,
+                     labelText,
+                     color = useEfficiency ? expansionBg : LLLHcolorbg,
+                     style = label.style_label_up,
+                     textcolor = useEfficiency ? expansionText : LLLHcolor,
+                     size = size.tiny
+                 )
+
+            isLiquiditySweep := false
+
+        else
+            if plotSwingLabels
+                label.new(
+                     localLowIndex,
+                     localLow,
+                     useMeasurements ? str.tostring(height) : "LS",
+                     color = useEfficiency ? expansionBg : LScolorbg,
+                     style = label.style_label_up,
+                     textcolor = useEfficiency ? expansionText : LScolor,
+                     size = size.tiny
+                )
+
+            isLiquiditySweep := true
+
+    else
+        isLiquiditySweep := false
+
+    bearishBOSOccurred := false
+
+    // =========================
+    // HL LABEL
+    // =========================
+    if isHL
+
+        labelText = useMeasurements ? str.tostring(height) : "HL"
+
+        if plotSwingLabels
+            label.new(
+                 localLowIndex,
+                 localLow,
+                 labelText,
+                 color = useEfficiency ? expansionBg : HHHLcolorbg,
+                 style = label.style_label_up,
+                 textcolor = useEfficiency ? expansionText : HHHLcolor,
+                 size = size.tiny
+             )
+
+    bearishBOSOccurred := false
+
+    // Store previous displacement
+    prevLowDisplacement := height
+
+    prevSwingLow := localLow
+
+
+if MTFBullishShift and shiftMode == "MTF"
+
+    // Plot zigzag line
+    if not na(prevSwingLow) and plotZigZag
+        if ShiftLocalLow < prevSwingLow  // LL
+            if zigzagLineStyle == "Solid"
+                line.new(x1=ShiftLocalHighIndex, y1=ShiftLocalHigh, x2=ShiftLocalLowIndex, y2=ShiftLocalLow, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_solid)
+            else if zigzagLineStyle == "Dotted"
+                line.new(x1=ShiftLocalHighIndex, y1=ShiftLocalHigh, x2=ShiftLocalLowIndex, y2=ShiftLocalLow, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dotted)
+            else if zigzagLineStyle == "Dashed"
+                line.new(x1=ShiftLocalHighIndex, y1=ShiftLocalHigh, x2=ShiftLocalLowIndex, y2=ShiftLocalLow, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dashed)
+        else
+            if zigzagLineStyle == "Solid"
+                line.new(x1=ShiftLocalHighIndex, y1=ShiftLocalHigh, x2=ShiftLocalLowIndex, y2=ShiftLocalLow, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_solid)
+            else if zigzagLineStyle == "Dotted"
+                line.new(x1=ShiftLocalHighIndex, y1=ShiftLocalHigh, x2=ShiftLocalLowIndex, y2=ShiftLocalLow, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dotted)
+            else if zigzagLineStyle == "Dashed"
+                line.new(x1=ShiftLocalHighIndex, y1=ShiftLocalHigh, x2=ShiftLocalLowIndex, y2=ShiftLocalLow, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dashed)
+
+    // Swing classification
+    if not na(prevSwingLow)
+        isLL := ShiftLocalLow < prevSwingLow
+        isHL := ShiftLocalLow > prevSwingLow
+
+    // =========================
+    // DISPLACEMENT COMPARISON
+    // =========================
+    height = math.abs(ShiftLocalHigh - ShiftLocalLow)
+
+    lowGreen = na(prevLowDisplacement) ? true : height < prevLowDisplacement
+
+    expansionBg = lowGreen ? HHHLcolorbg : LLLHcolorbg
+
+    expansionText = lowGreen ? HHHLcolor : LLLHcolor
+
+    // =========================
+    // LL / LS LABEL
+    // =========================
+    if isLL
+
+        llText = useMeasurements ? str.tostring(height) : "LL"
+        lsText = useMeasurements ? str.tostring(height) : "LS"
+
+        if bearishBOSOccurredShift
+            if plotSwingLabels
+                label.new(
+                     ShiftLocalLowIndex,
+                     ShiftLocalLow,
+                     llText,
+                     color = useEfficiency ? expansionBg : LLLHcolorbg,
+                     style = label.style_label_up,
+                     textcolor = useEfficiency ? expansionText : LLLHcolor,
+                     size = size.small
+                 )
+
+            isLiquiditySweepMTF := false
+
+        else
+            if plotSwingLabels
+                label.new(
+                     ShiftLocalLowIndex,
+                     ShiftLocalLow,
+                     lsText,
+                     color = useEfficiency ? expansionBg : LScolorbg,
+                     style = label.style_label_up,
+                     textcolor = useEfficiency ? expansionText : LScolor,
+                     size = size.small
+                 )
+
+            isLiquiditySweepMTF := true
+
+    // =========================
+    // HL LABEL
+    // =========================
+    if isHL
+
+        hlText = useMeasurements ? str.tostring(height) : "HL"
+
+        if plotSwingLabels
+            label.new(
+                 ShiftLocalLowIndex,
+                 ShiftLocalLow,
+                 hlText,
+                 color = useEfficiency ? expansionBg : HHHLcolorbg,
+                 style = label.style_label_up,
+                 textcolor = useEfficiency ? expansionText : HHHLcolor,
+                 size = size.small
+             )
+
+    // Store previous displacement
+    prevLowDisplacement := height
+    prevSwingLow := ShiftLocalLow
+    lastSwingLow2 := ShiftLocalLow
+    bearishBOSOccurredShift := false
+
+//========================================================================================
+if plotLTFBearishShift and shiftMode == "LTF"
+
+    // Plot zigzag line
+    if not na(prevSwingHigh) and plotZigZag
+        if localHigh > prevSwingHigh  // HH
+            if zigzagLineStyle == "Solid"
+                line.new(x1=localLowIndex, y1=localLow, x2=localHighIndex, y2=localHigh, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_solid)
+            else if zigzagLineStyle == "Dotted"
+                line.new(x1=localLowIndex, y1=localLow, x2=localHighIndex, y2=localHigh, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dotted)
+            else if zigzagLineStyle == "Dashed"
+                line.new(x1=localLowIndex, y1=localLow, x2=localHighIndex, y2=localHigh, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dashed)
+
+        else  // LH
+            if zigzagLineStyle == "Solid"
+                line.new(x1=localLowIndex, y1=localLow, x2=localHighIndex, y2=localHigh, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_solid)
+            else if zigzagLineStyle == "Dotted"
+                line.new(x1=localLowIndex, y1=localLow, x2=localHighIndex, y2=localHigh, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dotted)
+            else if zigzagLineStyle == "Dashed"
+                line.new(x1=localLowIndex, y1=localLow, x2=localHighIndex, y2=localHigh, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dashed)
+
+    // Swing classification
+    if not na(prevSwingHigh)
+        isHH := localHigh > prevSwingHigh
+        isLH := localHigh < prevSwingHigh
+
+    // =========================
+    // DISPLACEMENT COMPARISON
+    // =========================
+    height = math.abs(localHigh - localLow)
+
+    highGreen =
+         na(prevHighDisplacement) ?
+         true :
+         height >= prevHighDisplacement
+
+    expansionBg =
+         highGreen ?
+         HHHLcolorbg :
+         LLLHcolorbg
+
+    expansionText =
+         highGreen ?
+         HHHLcolor :
+         LLLHcolor
+
+    // =========================
+    // HH / LS LABEL
+    // =========================
+    if isHH
+
+        hhText = useMeasurements ? str.tostring(height) : "HH"
+        lsText = useMeasurements ? str.tostring(height) : "LS"
+
+        if bullishBOSOccurred
+            if plotSwingLabels
+                label.new(
+                     localHighIndex,
+                     localHigh,
+                     hhText,
+                     color = useEfficiency ? expansionBg : HHHLcolorbg,
+                     style = label.style_label_down,
+                     textcolor = useEfficiency ? expansionText : HHHLcolor,
+                     size = size.tiny
+                 )
+
+            isLiquiditySweep := false
+
+        else
+            if plotSwingLabels
+                label.new(
+                     localLowIndex,
+                     localLow,
+                     useMeasurements ? str.tostring(height) : "LS",
+                     color = useEfficiency ? expansionBg : LScolorbg,
+                     style = label.style_label_up,
+                     textcolor = useEfficiency ? expansionText : LScolor,
+                     size = size.tiny
+                )
+
+            isLiquiditySweep := true
+
+    else
+        isLiquiditySweep := false
+
+    bullishBOSOccurred := false
+
+    // =========================
+    // LH LABEL
+    // =========================
+    if isLH
+
+        lhText = useMeasurements ? str.tostring(height) : "LH"
+
+        if plotSwingLabels
+            label.new(
+                 localHighIndex,
+                 localHigh,
+                 lhText,
+                 color = useEfficiency ? expansionBg : LLLHcolorbg,
+                 style = label.style_label_down,
+                 textcolor = useEfficiency ? expansionText : LLLHcolor,
+                 size = size.tiny
+             )
+
+    bullishBOSOccurred := false
+
+    // Store previous displacement
+    prevHighDisplacement := height
+
+    prevSwingHigh := localHigh
+
+if MTFBearishShift and shiftMode == "MTF"
+
+    // Plot zigzag line
+    if not na(prevSwingHigh) and plotZigZag
+        if ShiftLocalHigh > prevSwingHigh  // HH
+            if zigzagLineStyle == "Solid"
+                line.new(x1=ShiftLocalLowIndex, y1=ShiftLocalLow, x2=ShiftLocalHighIndex, y2=ShiftLocalHigh, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_solid)
+            else if zigzagLineStyle == "Dotted"
+                line.new(x1=ShiftLocalLowIndex, y1=ShiftLocalLow, x2=ShiftLocalHighIndex, y2=ShiftLocalHigh, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dotted)
+            else if zigzagLineStyle == "Dashed"
+                line.new(x1=ShiftLocalLowIndex, y1=ShiftLocalLow, x2=ShiftLocalHighIndex, y2=ShiftLocalHigh, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dashed)
+        else
+            if zigzagLineStyle == "Solid"
+                line.new(x1=ShiftLocalLowIndex, y1=ShiftLocalLow, x2=ShiftLocalHighIndex, y2=ShiftLocalHigh, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_solid)
+            else if zigzagLineStyle == "Dotted"
+                line.new(x1=ShiftLocalLowIndex, y1=ShiftLocalLow, x2=ShiftLocalHighIndex, y2=ShiftLocalHigh, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dotted)
+            else if zigzagLineStyle == "Dashed"
+                line.new(x1=ShiftLocalLowIndex, y1=ShiftLocalLow, x2=ShiftLocalHighIndex, y2=ShiftLocalHigh, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dashed)
+
+    // Swing classification
+    if not na(prevSwingHigh)
+        isHH := ShiftLocalHigh > prevSwingHigh
+        isLH := ShiftLocalHigh < prevSwingHigh
+
+    // =========================
+    // DISPLACEMENT COMPARISON
+    // =========================
+    height = math.abs(ShiftLocalHigh - ShiftLocalLow)
+
+    highGreen =
+         na(prevHighDisplacement) ?
+         true :
+         height >= prevHighDisplacement
+
+    expansionBg =
+         highGreen ?
+         HHHLcolorbg :
+         LLLHcolorbg
+
+    expansionText =
+         highGreen ?
+         HHHLcolor :
+         LLLHcolor
+
+    // =========================
+    // HH / LS LABEL
+    // =========================
+    if isHH
+
+        hhText = useMeasurements ? str.tostring(height) : "HH"
+        lsText = useMeasurements ? str.tostring(height) : "LS"
+
+        if bullishBOSOccurredShift
+            if plotSwingLabels
+                label.new(
+                     ShiftLocalHighIndex,
+                     ShiftLocalHigh,
+                     hhText,
+                     color = useEfficiency ? expansionBg : HHHLcolorbg,
+                     style = label.style_label_down,
+                     textcolor = useEfficiency ? expansionText : HHHLcolor,
+                     size = size.small
+                 )
+
+            isLiquiditySweepMTF := false
+
+        else
+            if plotSwingLabels
+                label.new(
+                     ShiftLocalHighIndex,
+                     ShiftLocalHigh,
+                     lsText,
+                     color = useEfficiency ? expansionBg : LScolorbg,
+                     style = label.style_label_down,
+                     textcolor = useEfficiency ? expansionText : LScolor,
+                     size = size.small
+                 )
+
+            isLiquiditySweepMTF := true
+
+    // =========================
+    // LH LABEL
+    // =========================
+    if isLH
+
+        lhText = useMeasurements ? str.tostring(height) : "LH"
+
+        if plotSwingLabels
+            label.new(
+                 ShiftLocalHighIndex,
+                 ShiftLocalHigh,
+                 lhText,
+                 color = useEfficiency ? expansionBg : LLLHcolorbg,
+                 style = label.style_label_down,
+                 textcolor = useEfficiency ? expansionText : LLLHcolor,
+                 size = size.small
+             )
+
+    // Store previous displacement
+    prevHighDisplacement := height
+    prevSwingHigh := ShiftLocalHigh
+    lastSwingHigh2 := ShiftLocalHigh
+    bullishBOSOccurredShift := false
+
+if plotLSLines
+    // ===== INTERNAL BULLISH LS =====
+    if isLiquiditySweep and plotLTFBullishShift and shiftMode == "LTF"
+        line.new(x1=lastSwingLowIndex, y1=lastSwingLow, x2=localLowIndex, y2=lastSwingLow, color=LSLineColor, width=zigzagLineWidth, style=bosLineStyleConst)    
+        midX = math.floor((lastSwingLowIndex + localLowIndex)/2)
+
+        if plotLineLabels
+            widthBars = localLowIndex - lastSwingLowIndex
+            labelText = useMeasurements ? str.tostring(widthBars) : "LS"
+            label.new(x=midX, y=lastSwingLow, text=labelText, color=color.rgb(255, 82, 82, 100), textcolor=LSLineColor, style=label.style_label_up, size=size.tiny)
+
+    isLiquiditySweep := false 
+    lastSwingLow := na
+
+    // ===== INTERNAL BEARISH LS =====
+    if isLiquiditySweep and plotLTFBearishShift and shiftMode == "LTF"
+        line.new(x1=lastSwingHighIndex, y1=lastSwingHigh, x2=localHighIndex, y2=lastSwingHigh, color=LSLineColor, width=zigzagLineWidth, style=bosLineStyleConst)    
+        midX = math.floor((lastSwingHighIndex + localHighIndex)/2)
+
+        if plotLineLabels
+            widthBars = localHighIndex - lastSwingHighIndex
+            labelText = useMeasurements ? str.tostring(widthBars) : "LS"
+            label.new(x=midX, y=lastSwingHigh, text=labelText, color=color.rgb(255, 82, 82, 100), textcolor=LSLineColor, style=label.style_label_down, size=size.tiny)
+
+    isLiquiditySweep := false 
+    lastSwingHigh := na
+
+
+    // ===== MTF BULLISH LS =====
+    if isLiquiditySweepMTF and MTFBullishShift and shiftMode == "MTF"
+        line.new(x1=lastExtSwingLowIndex, y1=lastExtSwingLow, x2=ShiftLocalLowIndex, y2=lastExtSwingLow, color=LSLineColor, width=zigzagLineWidth, style=bosLineStyleConst)    
+        midX = math.floor((lastExtSwingLowIndex + ShiftLocalLowIndex)/2)
+
+        if plotLineLabels 
+            widthBars = ShiftLocalLowIndex - lastExtSwingLowIndex
+            labelText = useMeasurements ? str.tostring(widthBars) : "LS"
+            label.new(x=midX, y=lastExtSwingLow, text=labelText, color=color.rgb(255, 82, 82, 100), textcolor=LSLineColor, style=label.style_label_up, size=size.small)
+
+        isLiquiditySweepMTF := false 
+        lastExtSwingLow := na
+
+    // ===== MTF BEARISH LS =====
+    if isLiquiditySweepMTF and MTFBearishShift and shiftMode == "MTF"
+        line.new(x1=lastExtSwingHighIndex, y1=lastExtSwingHigh, x2=ShiftLocalHighIndex, y2=lastExtSwingHigh, color=LSLineColor, width=zigzagLineWidth, style=bosLineStyleConst)    
+        midX = math.floor((lastExtSwingHighIndex + ShiftLocalHighIndex)/2)
+
+        if plotLineLabels
+            widthBars = ShiftLocalHighIndex - lastExtSwingHighIndex
+            labelText = useMeasurements ? str.tostring(widthBars) : "LS"
+            label.new(x=midX, y=lastExtSwingHigh, text=labelText, color=color.rgb(255, 82, 82, 100), textcolor=LSLineColor, style=label.style_label_down, size=size.small)
+
+        isLiquiditySweepMTF := false 
+        lastExtSwingHigh := na
+
+
+
+// =====================================================================
+// ========================== MTF CHANGE OF CHARACTER ==================
+// =====================================================================
+var bool canPlotHTFBoSBull = false
+var bool canPlotHTFBoSBear = false
+
+MTFBullishCHoCH = ta.crossover(smaClose2, ShiftLocalHigh) and CHoCHCondtion != 1
+MTFBearishCHoCH = ta.crossunder(smaClose2, ShiftLocalLow) and CHoCHCondtion != -1
+
+if MTFBullishCHoCH 
+    canPlotHTFBoSBear := true
+    MTFbullishCHoCHIndex := bar_index
+
+if MTFBearishCHoCH
+    canPlotHTFBoSBull := true
+    MTFbearishCHoCHIndex := bar_index
+   
+
+if shiftMode == "MTF"
+    if MTFBullishCHoCH
+        if canPlotCHoCH and CHoCHCondtion != 1 and canPlotCHoCH and plotCHoCHLines
+            upCHoCHLine := line.new(x1=ShiftLocalHighIndex, y1=ShiftLocalHigh, x2=bar_index, y2=ShiftLocalHigh, color=CHoCHColor, width=zigzagLineWidth, style=bosLineStyleConst)
+            midX = math.floor((ShiftLocalHighIndex + bar_index)/2)
+
+            if plotLineLabels
+                widthBars = bar_index - ShiftLocalHighIndex
+                labelText = useMeasurements ? str.tostring(widthBars) : "CHoCH"
+                upCHochLabel := label.new(x=midX, y=ShiftLocalHigh, text=labelText, color=color.rgb(255, 82, 82, 100), textcolor=CHoCHColor, style=label.style_label_down, size=size.small)
+
+        if showBullishInflectionZones
+            box.delete(lastSupplyZone)
+            newBox = box.new(left = bullishInflectionLeft, right = bullishInflectionRight + orderBlockDuration,top = bullishInflectionHigh, bottom = bullishInflectionLow, bgcolor = bullishInflectionZoneColor, border_color = demandZoneColor, border_width = zigzagLineWidth)
+            array.push(bullishInflectionZones, newBox)
+
+        CHoCHHIGH := ShiftLocalHigh
+        ShiftLocalHigh := na
+        CHoCHCondtion := 1
+        bearInflectionLow := ShiftLocalLow
+        bearInflectionLowIndex := ShiftLocalLowIndex
+
+
+    if MTFBearishCHoCH
+        if canPlotCHoCH and CHoCHCondtion != -1 and canPlotCHoCH and plotCHoCHLines
+            downCHoCHLine := line.new(x1=ShiftLocalLowIndex, y1=ShiftLocalLow, x2=bar_index, y2=ShiftLocalLow, color=CHoCHColor, width=zigzagLineWidth, style=bosLineStyleConst)
+            midX = math.floor((ShiftLocalLowIndex + bar_index)/2)
+
+            if plotLineLabels
+                widthBars = bar_index - ShiftLocalLowIndex
+                labelText = useMeasurements ? str.tostring(widthBars) : "CHoCH"
+                downCHoCHLabel := label.new(x=midX, y=ShiftLocalLow, text=labelText, color=color.rgb(255, 82, 82, 100), textcolor=CHoCHColor, style=label.style_label_up, size=size.small)
+
+        if showBearishInflectionZones
+            box.delete(lastDemandZone)
+            newBox = box.new(left = bearishInflectionLeft, right = bearishInflectionRight + orderBlockDuration, top = bearishInflectionHigh, bottom = bearishInflectionLow, bgcolor = bearishInflectionZoneColor, border_color = supplyZoneColor, border_width = zigzagLineWidth)
+            array.push(bearishInflectionZones, newBox)
+
+        CHoCHLOW := ShiftLocalLow
+        ShiftLocalLow := na
+        CHoCHCondtion := -1
+        bullInflectionHigh := ShiftLocalHigh
+        bullInflectionHighIndex := ShiftLocalHighIndex
+
+
+canPlotCHoCH := true
+
+// === Lowest Low Between Alternate Bullish Break and Last Bearish Break (Safe) ===
+if MTFBullishCHoCH and shiftMode == "MTF"
+    float lowestLow = na
+    int lowestIndex = na
+    int startIndex = math.max(ShiftLocalLowIndex, bar_index - maxHistory)
+    int endIndex = bar_index
+
+    for i = startIndex to endIndex
+        int lookback = bar_index - i
+        if lookback >= 0 and lookback < maxHistory and not na(HtfLow[lookback])
+            if na(lowestLow) or HtfLow[lookback] < lowestLow
+                lowestLow := HtfLow[lookback]
+                lowestIndex := i
+
+    CHoCHCondtion := 1
+
+// =====================================================================
+// ========================== MTF BREAK OF STRUCTURE 2 =================
+// =====================================================================
+
+MTFBullishBoS2 = not na(lastSwingHigh2) and smaClose2 > ShiftLocalHigh
+MTFBearishBoS2 = not na(lastSwingLow2) and smaClose2 < ShiftLocalLow
+
+if MTFBullishBoS2
+    canBreakMTFBullishShift := false
+
+    if plotBoSLines and shiftMode == "MTF"
+        widthBars = bar_index - ShiftLocalHighIndex
+        labelText = useMeasurements ? str.tostring(widthBars) : "BoS"
+
+        if CHoCHHIGH == lastSwingHigh2
+            lastBullBoSLine := line.new(x1=ShiftLocalHighIndex, y1=ShiftLocalHigh, x2=bar_index, y2=ShiftLocalHigh, color=bosBullishLineColor, width=zigzagLineWidth, style=bosLineStyleConst)
+            midX = math.floor((ShiftLocalHighIndex + bar_index)/2)
+            if plotLineLabels
+                lastBullBoSLabel := label.new(x=midX, y=ShiftLocalHigh, text=labelText, color=color.rgb(255, 82, 82, 100), textcolor=bosBullishLineColor, style=label.style_label_down, size=size.small)
+        else
+            line.new(x1=ShiftLocalHighIndex, y1=ShiftLocalHigh, x2=bar_index, y2=ShiftLocalHigh, color=bosBullishLineColor, width=zigzagLineWidth, style=bosLineStyleConst)
+            midX = math.floor((ShiftLocalHighIndex + bar_index)/2)
+            if plotLineLabels
+                label.new(x=midX, y=ShiftLocalHigh, text=labelText, color=color.rgb(255, 82, 82, 100), textcolor=bosBullishLineColor, style=label.style_label_down, size=size.small)
+
+    CHoCHLOW := ShiftLocalLow
+    ShiftLocalHigh := na
+
+if MTFBearishBoS2 
+    canBreakMTFBearishShift := false
+
+    if plotBoSLines and shiftMode == "MTF"
+        widthBars = bar_index - ShiftLocalLowIndex
+        labelText = useMeasurements ? str.tostring(widthBars) : "BoS"
+
+        if CHoCHLOW == lastSwingLow2 
+            lastBearBoSLine := line.new(x1=ShiftLocalLowIndex, y1=ShiftLocalLow, x2=bar_index, y2=ShiftLocalLow, color=bosBearishLineColor, width=zigzagLineWidth, style=bosLineStyleConst)
+            midX = math.floor((ShiftLocalLowIndex + bar_index)/2) 
+            if plotLineLabels
+                lastBearBoSLabel := label.new(x=midX, y=ShiftLocalLow, text=labelText, color=color.rgb(255, 82, 82, 100), textcolor=bosBearishLineColor, style=label.style_label_up, size=size.small)
+        else 
+            line.new(x1=ShiftLocalLowIndex, y1=ShiftLocalLow, x2=bar_index, y2=ShiftLocalLow, color=bosBearishLineColor, width=zigzagLineWidth, style=bosLineStyleConst)
+            midX = math.floor((ShiftLocalLowIndex + bar_index)/2) 
+            if plotLineLabels
+                label.new(x=midX, y=ShiftLocalLow, text=labelText, color=color.rgb(255, 82, 82, 100), textcolor=bosBearishLineColor, style=label.style_label_up, size=size.small)
+
+    CHoCHHIGH := ShiftLocalHigh
+    ShiftLocalLow := na
+
+if MTFBullishCHoCH and plotCHoCHLines
+    line.delete(lastBullBoSLine)
+    lastBullBoSLine := na
+    label.delete(lastBullBoSLabel)
+    lastBullBoSLabel := na
+
+if MTFBearishCHoCH and plotCHoCHLines
+    line.delete(lastBearBoSLine)
+    lastBearBoSLine := na
+    label.delete(lastBearBoSLabel)
+    lastBearBoSLabel := na
+
+
+//========================================================================
+//==================== HTF SWING HIGH/LOW FUNCTIONS========================
+//=========================================================================
+var float prevHTFLocalHigh = na 
+var int prevHTFLocalHighIndex = na 
+
+var float prevHTFLocalLow = na 
+var int prevHTFLocalLowIndex = na 
+
+var bool isLiquiditySweepHTF = false
+
+if MTFBearishCHoCH and shiftMode == "HTF"
+    float highestHigh = na
+    int highestIndex = na
+
+    int startIndex = na(HTFLocalLowIndex) ? bar_index - maxHistory : HTFLocalLowIndex
+    int endIndex = bar_index
+
+    for i = startIndex to endIndex
+        int lookback = bar_index - i
+        if lookback >= 0 and lookback < maxHistory and not na(HtfHigh[lookback])
+            if na(highestHigh) or HtfHigh[lookback] > highestHigh
+                highestHigh := HtfHigh[lookback]
+                highestIndex := i
+
+    prevHTFLocalHigh := HTFLocalHigh
+    prevHTFLocalHighIndex := HTFLocalHighIndex
+    HTFLocalHigh := highestHigh
+    HTFLocalHighIndex := highestIndex
+    lastHTFShiftType := -1
+
+
+if MTFBullishCHoCH and shiftMode == "HTF"
+    float lowestLow = na
+    int lowestIndex = na
+
+    int startIndex = na(HTFLocalHighIndex) ? bar_index - maxHistory : HTFLocalHighIndex
+    int endIndex = bar_index
+
+    for i = startIndex to endIndex
+        int lookback = bar_index - i
+        if lookback >= 0 and lookback < maxHistory and not na(HtfLow[lookback])
+            if na(lowestLow) or HtfLow[lookback] < lowestLow
+                lowestLow := HtfLow[lookback]
+                lowestIndex := i
+
+    prevHTFLocalLow := HTFLocalLow
+    prevHTFLocalLowIndex := HTFLocalLowIndex
+    HTFLocalLow := lowestLow
+    HTFLocalLowIndex := lowestIndex
+    lastHTFShiftType := 1
+
+
+// =====================================================================
+// ========================== HTF BREAK OF STRUCTURE ===================
+// =====================================================================
+
+var bool canBreakHTFBullishShift = true
+var bool canBreakHTFBearishShift = true
+
+var line lastHTFBullBOSLine = na 
+var label lastHTFBullBOSLabel = na
+
+var line lastHTFBearBOSLine = na 
+var label lastHTFBearBOSLabel = na
+
+var float HTFCHoCHHigh = na 
+var float HTFCHoCHLow = na 
+
+var float lastHTFBoSType = 0
+
+var bool HTFBullishBoSOccurred = false 
+var bool HTFBearishBoSOccurred = false
+
+var line  HTFBullishBoSLine   = na
+var label HTFBullishBoSLabel  = na
+
+var line  HTFBearishBoSLine   = na
+var label HTFBearishBoSLabel  = na
+
+HTFBullishBoS = smaClose3 > HTFLocalHigh 
+HTFBearishBoS =  smaClose3 < HTFLocalLow
+
+HTFBullishCHoCH = HTFBullishBoS and lastHTFBoSType != 1
+HTFBearishCHoCH = HTFBearishBoS and lastHTFBoSType != -1
+
+if HTFBullishBoS and shiftMode == "HTF"
+    canBreakHTFBullishShift := false
+
+    if plotBoSLines and canPlotHTFBoSBull
+        widthBars = bar_index - HTFLocalHighIndex
+        labelText = useMeasurements ? str.tostring(widthBars) : "BoS"
+
+        HTFBullishBoSLine := line.new(x1=HTFLocalHighIndex, y1=HTFLocalHigh, x2=bar_index, y2=HTFLocalHigh, color=bosBullishLineColor, width=zigzagLineWidth, style=bosLineStyleConst)
+        midX = math.floor((HTFLocalHighIndex + bar_index) / 2)
+        if plotLineLabels
+            HTFBullishBoSLabel := label.new(x=midX, y=HTFLocalHigh, text=labelText, color=color.rgb(255, 82, 82, 100), textcolor=bosBullishLineColor, style=label.style_label_down, size=size.normal)
+
+    if HTFBullishCHoCH and plotCHoCHLines
+        line.delete(HTFBullishBoSLine)
+        label.delete(HTFBullishBoSLabel)
+
+    if plotCHoCHLines
+        widthBars = bar_index - HTFLocalHighIndex
+        labelText = useMeasurements ? str.tostring(widthBars) : "BoS"
+
+        if HTFBullishCHoCH and canPlotHTFBoSBull
+            line.new(x1=HTFLocalHighIndex, y1=HTFLocalHigh, x2=bar_index, y2=HTFLocalHigh, color=CHoCHColor, width=zigzagLineWidth, style=bosLineStyleConst)
+            midX = math.floor((HTFLocalHighIndex + bar_index) / 2)
+            if plotLineLabels
+                label.new(x=midX, y=HTFLocalHigh, text="CHoCH", color=color.rgb(255, 82, 82, 100), textcolor=CHoCHColor, style=label.style_label_down, size=size.normal)
+
+    HTFBullishBoSOccurred := true
+    lastHTFBoSType := 1
+    canPlotHTFBoSBull := false 
+
+if HTFBearishBoS and shiftMode == "HTF"
+    canBreakHTFBearishShift := false
+
+    if plotBoSLines and canPlotHTFBoSBear
+        widthBars = bar_index - HTFLocalLowIndex
+        labelText = useMeasurements ? str.tostring(widthBars) : "BoS"
+
+        HTFBearishBoSLine := line.new(x1=HTFLocalLowIndex, y1=HTFLocalLow, x2=bar_index, y2=HTFLocalLow, color=bosBearishLineColor, width=zigzagLineWidth, style=bosLineStyleConst)
+        midX = math.floor((HTFLocalLowIndex + bar_index) / 2)
+        if plotLineLabels
+            HTFBearishBoSLabel := label.new(x=midX, y=HTFLocalLow, text=labelText, color=color.rgb(82, 255, 82, 100), textcolor=bosBearishLineColor, style=label.style_label_up, size=size.normal)
+
+    if HTFBearishCHoCH and plotCHoCHLines
+        line.delete(HTFBearishBoSLine)
+        label.delete(HTFBearishBoSLabel)
+
+    if plotCHoCHLines and canPlotHTFBoSBear
+        widthBars = bar_index - HTFLocalLowIndex
+        labelText = useMeasurements ? str.tostring(widthBars) : "BoS"
+
+        if HTFBearishCHoCH
+            line.new(x1=HTFLocalLowIndex, y1=HTFLocalLow, x2=bar_index, y2=HTFLocalLow, color=CHoCHColor, width=zigzagLineWidth, style=bosLineStyleConst)
+            midX = math.floor((HTFLocalLowIndex + bar_index) / 2)
+            if plotLineLabels
+                label.new(x=midX, y=HTFLocalLow, text="CHoCH", color=color.rgb(82, 255, 82, 100), textcolor=CHoCHColor, style=label.style_label_up, size=size.normal)
+
+    HTFBearishBoSOccurred := true
+    lastHTFBoSType := -1
+    canPlotHTFBoSBear := false
+
+// =====================================================================
+// ========================== HTF SWING STRUCTURE ===================
+// =====================================================================
+
+if MTFBearishCHoCH and shiftMode == "HTF"
+
+    // Plot zigzag line
+    if plotZigZag
+        if HTFLocalHigh > prevHTFLocalHigh  // HH
+            if zigzagLineStyle == "Solid"
+                line.new(x1=HTFLocalLowIndex, y1=HTFLocalLow, x2=HTFLocalHighIndex, y2=HTFLocalHigh, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_solid)
+            else if zigzagLineStyle == "Dotted"
+                line.new(x1=HTFLocalLowIndex, y1=HTFLocalLow, x2=HTFLocalHighIndex, y2=HTFLocalHigh, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dotted)
+            else if zigzagLineStyle == "Dashed"
+                line.new(x1=HTFLocalLowIndex, y1=HTFLocalLow, x2=HTFLocalHighIndex, y2=HTFLocalHigh, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dashed)
+        else
+            if zigzagLineStyle == "Solid"
+                line.new(x1=HTFLocalLowIndex, y1=HTFLocalLow, x2=HTFLocalHighIndex, y2=HTFLocalHigh, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_solid)
+            else if zigzagLineStyle == "Dotted"
+                line.new(x1=HTFLocalLowIndex, y1=HTFLocalLow, x2=HTFLocalHighIndex, y2=HTFLocalHigh, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dotted)
+            else if zigzagLineStyle == "Dashed"
+                line.new(x1=HTFLocalLowIndex, y1=HTFLocalLow, x2=HTFLocalHighIndex, y2=HTFLocalHigh, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dashed)
+
+    // Swing classification
+    isHH := HTFLocalHigh > prevHTFLocalHigh
+    isLH := HTFLocalHigh < prevHTFLocalHigh
+
+    // =========================
+    // DISPLACEMENT COMPARISON
+    // =========================
+    height = math.abs(HTFLocalHigh - HTFLocalLow)
+
+    highGreen =
+         na(prevHighDisplacement) ?
+         true :
+         height >= prevHighDisplacement
+
+    expansionBg =
+         highGreen ?
+         HHHLcolorbg :
+         LLLHcolorbg
+
+    expansionText =
+         highGreen ?
+         HHHLcolor :
+         LLLHcolor
+
+    // =========================
+    // HH / LS LABEL
+    // =========================
+    if isHH
+
+        hhText = useMeasurements ? str.tostring(height) : "HH"
+        lsText = useMeasurements ? str.tostring(height) : "LS"
+
+        if HTFBullishBoSOccurred
+            if plotSwingLabels
+                label.new(
+                     HTFLocalHighIndex,
+                     HTFLocalHigh,
+                     hhText,
+                     color = useEfficiency ? expansionBg : HHHLcolorbg,
+                     style = label.style_label_down,
+                     textcolor = useEfficiency ? expansionText : HHHLcolor,
+                     size = size.normal
+                 )
+            isLiquiditySweepHTF := false 
+        else
+            if plotSwingLabels
+                label.new(
+                     HTFLocalHighIndex,
+                     HTFLocalHigh,
+                     lsText,
+                     color = useEfficiency ? expansionBg : LScolorbg,
+                     style = label.style_label_down,
+                     textcolor = useEfficiency ? expansionText : LScolor,
+                     size = size.normal
+                 )
+
+            isLiquiditySweepHTF := true
+
+    // =========================
+    // LH LABEL
+    // =========================
+    if isLH
+
+        lhText = useMeasurements ? str.tostring(height) : "LH"
+
+        if plotSwingLabels
+            label.new(
+                 HTFLocalHighIndex,
+                 HTFLocalHigh,
+                 lhText,
+                 color = useEfficiency ? expansionBg : LLLHcolorbg,
+                 style = label.style_label_down,
+                 textcolor = useEfficiency ? expansionText : LLLHcolor,
+                 size = size.normal
+             )
+
+    if plotLSLines
+    // ===== HTF BEARISH LS =====    
+        if isLiquiditySweepHTF
+            line.new(x1=prevHTFLocalHighIndex, y1=prevHTFLocalHigh, x2=HTFLocalHighIndex, y2=prevHTFLocalHigh, color=LSLineColor, width=zigzagLineWidth, style=bosLineStyleConst)
+            midX = math.floor((prevHTFLocalHighIndex + HTFLocalHighIndex) / 2)
+
+            if plotLineLabels
+                widthBars = HTFLocalHighIndex - prevHTFLocalHighIndex
+                labelText = useMeasurements ? str.tostring(widthBars) : "LS"
+                label.new(x=midX, y=prevHTFLocalHigh, text=labelText, color=color.rgb(82, 255, 82, 100), textcolor=LSLineColor, style=label.style_label_down, size=size.small)
+
+            isLiquiditySweepHTF := false
+            lastExtSwingHigh := na
+
+    // Store previous displacement
+    prevHighDisplacement := height
+    prevHTFLocalHigh := HTFLocalHigh
+    HTFBullishBoSOccurred := false
+
+if MTFBullishCHoCH and shiftMode == "HTF"
+
+    // Plot zigzag line
+    if plotZigZag
+        if HTFLocalLow < prevHTFLocalLow  // LL
+            if zigzagLineStyle == "Solid"
+                line.new(x1=HTFLocalHighIndex, y1=HTFLocalHigh, x2=HTFLocalLowIndex, y2=HTFLocalLow, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_solid)
+            else if zigzagLineStyle == "Dotted"
+                line.new(x1=HTFLocalHighIndex, y1=HTFLocalHigh, x2=HTFLocalLowIndex, y2=HTFLocalLow, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dotted)
+            else if zigzagLineStyle == "Dashed"
+                line.new(x1=HTFLocalHighIndex, y1=HTFLocalHigh, x2=HTFLocalLowIndex, y2=HTFLocalLow, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dashed)
+        else
+            if zigzagLineStyle == "Solid"
+                line.new(x1=HTFLocalHighIndex, y1=HTFLocalHigh, x2=HTFLocalLowIndex, y2=HTFLocalLow, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_solid)
+            else if zigzagLineStyle == "Dotted"
+                line.new(x1=HTFLocalHighIndex, y1=HTFLocalHigh, x2=HTFLocalLowIndex, y2=HTFLocalLow, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dotted)
+            else if zigzagLineStyle == "Dashed"
+                line.new(x1=HTFLocalHighIndex, y1=HTFLocalHigh, x2=HTFLocalLowIndex, y2=HTFLocalLow, color=zigzagLineColor, width=zigzagLineWidth, style=line.style_dashed)
+
+    // Swing classification (LOW side logic)
+    isLL := HTFLocalLow < prevHTFLocalLow
+    isHL := HTFLocalLow > prevHTFLocalLow
+
+    // =========================
+    // DISPLACEMENT COMPARISON
+    // =========================
+    height = math.abs(HTFLocalHigh - HTFLocalLow)
+
+    lowGreen =
+         na(prevLowDisplacement) ?
+         true :
+         height < prevLowDisplacement
+
+    expansionBg =
+         lowGreen ?
+         HHHLcolorbg :
+         LLLHcolorbg
+
+    expansionText =
+         lowGreen ?
+         HHHLcolor :
+         LLLHcolor
+
+    // =========================
+    // LL / LS LABEL
+    // =========================
+    if isLL
+
+        llText = useMeasurements ? str.tostring(height) : "LL"
+        lsText = useMeasurements ? str.tostring(height) : "LS"
+
+        if HTFBearishBoSOccurred
+            if plotSwingLabels
+                label.new(
+                     HTFLocalLowIndex,
+                     HTFLocalLow,
+                     llText,
+                     color = useEfficiency ? expansionBg : HHHLcolorbg,
+                     style = label.style_label_up,
+                     textcolor = useEfficiency ? expansionText : HHHLcolor,
+                     size = size.normal
+                 )
+
+            isLiquiditySweepHTF := false
+
+        else
+            if plotSwingLabels
+                label.new(
+                     HTFLocalLowIndex,
+                     HTFLocalLow,
+                     lsText,
+                     color = useEfficiency ? expansionBg : LScolorbg,
+                     style = label.style_label_up,
+                     textcolor = useEfficiency ? expansionText : LScolor,
+                     size = size.normal
+                 )
+
+            isLiquiditySweepHTF := true
+
+    // =========================
+    // HL LABEL
+    // =========================
+    if isHL
+
+        hlText = useMeasurements ? str.tostring(height) : "HL"
+
+        if plotSwingLabels
+            label.new(
+                 HTFLocalLowIndex,
+                 HTFLocalLow,
+                 hlText,
+                 color = useEfficiency ? expansionBg : HHHLcolorbg,
+                 style = label.style_label_up,
+                 textcolor = useEfficiency ? expansionText : HHHLcolor,
+                 size = size.normal
+             )
+
+    if plotLSLines
+    // ===== HTF BULLISH LS =====
+        if isLiquiditySweepHTF
+            line.new(x1=prevHTFLocalLowIndex, y1=prevHTFLocalLow, x2=HTFLocalLowIndex, y2=prevHTFLocalLow, color=LSLineColor, width=zigzagLineWidth, style=bosLineStyleConst)    
+            midX = math.floor((prevHTFLocalLowIndex + HTFLocalLowIndex)/2)
+
+            if plotLineLabels 
+                widthBars = HTFLocalLowIndex - prevHTFLocalLowIndex
+                labelText = useMeasurements ? str.tostring(widthBars) : "LS"
+                label.new(x=midX, y=prevHTFLocalLow, text=labelText, color=color.rgb(255, 82, 82, 100), textcolor=LSLineColor, style=label.style_label_up, size=size.small)
+
+            isLiquiditySweepHTF := false 
+            lastExtSwingLow := na
+
+    // Store previous displacement
+    prevLowDisplacement := height
+    prevHTFLocalLow := HTFLocalLow
+    HTFBearishBoSOccurred := false
+
+
+
+// =====================================================================
+// ========================== ALERT DECLARATIONS =======================
+// =====================================================================
+
+if shiftMode == "LTF"
+
+    bullishShiftOccurredAlert := plotLTFBullishShift
+    bearishShiftOccurredAlert := plotLTFBearishShift
+
+    bullishBoSOcurredAlert := bullishBoS
+    bearishBoSOcurredAlert := bearishBoS
+
+    bearishCHoCHOccurredAlert := MTFBearishShift
+    bullishCHoCHOccurredAlert := MTFBullishShift
+
+    HHOccurredAlert := plotLTFBearishShift and isHH
+    LHOccurredAlert := plotLTFBearishShift and isLH
+    HLOccurredAlert := plotLTFBullishShift and isHL
+    LLOccurredAlert := plotLTFBullishShift and isLL
+    LSOccurredAlert := (plotLTFBullishShift or plotLTFBearishShift) and isLiquiditySweep
+
+if shiftMode == "MTF"
+
+    bullishShiftOccurredAlert := MTFBullishShift
+    bearishShiftOccurredAlert := MTFBearishShift
+
+    bullishBoSOcurredAlert := MTFBullishBoS2
+    bearishBoSOcurredAlert := MTFBearishBoS2
+
+    bearishCHoCHOccurredAlert := MTFBullishCHoCH
+    bullishCHoCHOccurredAlert := MTFBearishCHoCH
+
+    HHOccurredAlert := MTFBearishShift and isHH and not isLiquiditySweepMTF
+    LHOccurredAlert := MTFBearishShift and isLH
+    HLOccurredAlert := MTFBullishShift and isHL
+    LLOccurredAlert := MTFBullishShift and isLL and not isLiquiditySweepMTF
+    LSOccurredAlert := (MTFBullishShift or MTFBearishShift) and isLiquiditySweepMTF
+
+// === Alert Conditions ===
+
+//LTF
+
+alertcondition(plotLTFBearishShift, title="Bearish LTF Shift/ New Order Block", message="Bearish shift occurred (LTF)! New order block available.")
+alertcondition(plotLTFBullishShift, title="Bullish LTF Shift/ New Order Block", message="Bullish shift occurred (LTF)! New order block available.")
+
+alertcondition(bullishBoS, title="Bullish Break of Structure (LTF)", message="Bullish BoS detected. (LTF)")
+alertcondition(bearishBoS, title="Bearish Break of Structure (LTF)", message="Bearish BoS detected. (LTF)")
+
+alertcondition(MTFBullishShift, title="Bullish Change of Character (LTF)", message="Bullish CHoCH detected. (LTF)")
+alertcondition(MTFBearishShift, title="Bearish Change of Character (LTF)", message="Bearish CHoCH detected. (LTF)")
+
+alertcondition(plotLTFBearishShift and isHH and not isLiquiditySweep, title="Higher High (HH) LTF", message="Higher High (HH) detected. (LTF)")
+alertcondition(plotLTFBearishShift and isLH, title="Lower High (LH) LTF", message="Lower High (LH) detected. (LTF)")
+alertcondition(plotLTFBullishShift and isHL, title="Higher Low (HL) LTF", message="Higher Low (HL) detected. (LTF)")
+alertcondition(plotLTFBullishShift and isLL and not isLiquiditySweep, title="Lower Low (LL) LTF", message="Lower Low (LL) detected. (LTF)")
+alertcondition((plotLTFBullishShift or plotLTFBearishShift) and isLiquiditySweep, title="Liquidity Sweep (LS) LTF", message="Liquidity Sweep (LS) detected. (LTF)")
+
+//MTF
+
+alertcondition(MTFBullishShift, title="Bearish MTF Shift/ New Supply Zone", message="Bearish shift occurred (MTF)! New supply zone available.")
+alertcondition(MTFBearishShift, title="Bullish MTF Shift/ New Demand Zone", message="Bullish shift occurred (MTF)! New demand zone available.")
+
+alertcondition(MTFBullishBoS2, title="Bullish Break of Structure (MTF)", message="Bullish BoS detected. (MTF)")
+alertcondition(MTFBearishBoS2, title="Bearish Break of Structure (MTF)", message="Bearish BoS detected. (MTF)")
+
+alertcondition(unconfirmedBullShift, title="Bullish Shift (MTF, unconfirmed)", message="Bullish market shift detected. (MTF unconfirmed)")
+alertcondition(unconfirmedBearShift, title="Bearish Shift (MTF, unconfirmed)", message="Bearish market shift detected. (MTF unconfirmed)")
+
+alertcondition(MTFBullishCHoCH, title="Bullish Change of Character (MTF)", message="Bullish CHoCH detected. (MTF)")
+alertcondition(MTFBearishCHoCH, title="Bearish Change of Character (MTF)", message="Bearish CHoCH detected. (MTF)")
+
+alertcondition(MTFBearishShift and isHH and not isLiquiditySweepMTF, title="Higher High (HH) MTF", message="Higher High (HH) detected. (MTF)")
+alertcondition(MTFBearishShift and isLH, title="Lower High (LH) MTF", message="Lower High (LH) detected. (MTF)")
+alertcondition(MTFBullishShift and isHL, title="Higher Low (HL) MTF", message="Higher Low (HL) MTF detected. (MTF)")
+alertcondition(MTFBullishShift and isLL and not isLiquiditySweep, title="Lower Low (LL) MTF", message="Lower Low (LL) detected. (MTF)")
+alertcondition((MTFBullishShift or MTFBearishShift) and isLiquiditySweepMTF, title="Liquidity Sweep (LS) MTF", message="Liquidity Sweep (LS) detected. (MTF)")
+
+// === Automated Alerts ===
+if shiftMode == "LTF"
+
+    if bullishShiftOccurredAlert and (alertShift == true)
+        alert("New order block available. (LTF)", alert.freq_once_per_bar_close)
+    if bearishShiftOccurredAlert and (alertShift == true)
+        alert("New order block available. (LTF)", alert.freq_once_per_bar_close)
+
+    if bullishBoSOcurredAlert and (alertBoS == true)
+        alert("Bullish BoS detected. (LTF)", alert.freq_once_per_bar_close)
+    if bearishBoSOcurredAlert and (alertBoS == true)
+        alert("Bearish BoS detected. (LTF)", alert.freq_once_per_bar_close)
+
+    if bullishCHoCHOccurredAlert and (alertBoS == true)
+        alert("Bullish CHoCH detected. (LTF)", alert.freq_once_per_bar_close)
+    if bearishCHoCHOccurredAlert and (alertCHoCH == true)
+        alert("Bearish CHoCH detected. (LTF)", alert.freq_once_per_bar_close)   
+
+    if HHOccurredAlert and (alertHighsandLows == true)
+        alert("Higher High (HH) detected. (LTF)", alert.freq_once_per_bar_close)
+    if HLOccurredAlert and (alertHighsandLows == true)
+        alert("Higher Low (LH) detected. (LTF)", alert.freq_once_per_bar_close)
+    if LLOccurredAlert and (alertHighsandLows == true)
+        alert("Lower Low (LL) detected. (LTF)" , alert.freq_once_per_bar_close)
+    if LHOccurredAlert and (alertHighsandLows == true)
+        alert("Lower High (LH) detected. (LTF)", alert.freq_once_per_bar_close)
+    if LSOccurredAlert and (alertHighsandLows == true)
+        alert("Liquidity Sweep (LS) detected. (LTF)", alert.freq_once_per_bar_close)
+
+if shiftMode == "MTF"
+
+    if bullishShiftOccurredAlert and (alertShift == true)
+        alert("New demand zone available. (MTF)", alert.freq_once_per_bar_close)
+    if bearishShiftOccurredAlert and (alertShift == true)
+        alert("New supply zone available. (MTF)", alert.freq_once_per_bar_close)
+
+    if bullishBoSOcurredAlert and (alertBoS == true)
+        alert("Bullish BoS detected. (MTF)", alert.freq_once_per_bar_close)
+    if bearishBoSOcurredAlert and (alertBoS == true)
+        alert("Bearish BoS detected. (MTF)", alert.freq_once_per_bar_close)
+
+    if bullishCHoCHOccurredAlert and (alertBoS == true)
+        alert("Bullish CHoCH detected. (MTF)", alert.freq_once_per_bar_close)
+    if bearishCHoCHOccurredAlert and (alertCHoCH == true)
+        alert("Bearish CHoCH detected. (MTF)", alert.freq_once_per_bar_close)   
+
+    if HHOccurredAlert and (alertHighsandLows == true)
+        alert("Higher High (HH) detected. (MTF)", alert.freq_once_per_bar_close)
+    if HLOccurredAlert and (alertHighsandLows == true)
+        alert("Higher Low (LH) detected. (MTF)", alert.freq_once_per_bar_close)
+    if LLOccurredAlert and (alertHighsandLows == true)
+        alert("Lower Low (LL) detected. (MTF)" , alert.freq_once_per_bar_close)
+    if LHOccurredAlert and (alertHighsandLows == true)
+        alert("Lower High (LH) detected. (MTF)", alert.freq_once_per_bar_close)
+    if LSOccurredAlert and (alertHighsandLows == true)
+        alert("Liquidity Sweep (LS) detected. (MTF)", alert.freq_once_per_bar_close)

@@ -1,0 +1,17 @@
+import fs from 'node:fs';
+import def from '../custom/ict-structure-engine.js';
+import {validateIndicator} from '../public/lib/indicators.js';
+validateIndicator(def);
+const base='http://127.0.0.1:3777';
+const state=await(await fetch(base+'/api/state')).json();
+fs.mkdirSync('data/layouts',{recursive:true});fs.writeFileSync('data/layouts/before-ict-engine-'+Date.now()+'.json',JSON.stringify(state,null,2));
+const saved=await fetch(base+'/api/custom',{method:'POST',headers:{'Content-Type':'application/json','x-qt':'1'},body:JSON.stringify({name:'ict-structure-engine',code:fs.readFileSync('custom/ict-structure-engine.js','utf8')})});
+if(!saved.ok)throw Error(await saved.text());console.log(await saved.json());
+const pane=state.panes.find(p=>p.tf==='5m');if(!pane)throw Error('The saved 5-minute pane is absent');
+const existing=pane.indicators.filter(x=>x.id==='custom:ict-sessions');
+pane.indicators=[{uid:'ict-engine-5m',id:'custom:ict-structure-engine',params:{latest:'All completed',seconds:300,market:'forex',tick:.00001}},...existing];
+pane.ictTradeSetups=[];pane.ictRole='5m · ICT Structure Engine (local)';
+state.active=state.panes.indexOf(pane);
+const r=await fetch(base+'/api/state',{method:'PUT',headers:{'Content-Type':'application/json','x-qt':'1'},body:JSON.stringify(state)});if(!r.ok)throw Error(await r.text());
+fs.writeFileSync('data/layouts/ict-engine-four-timeframes.json',JSON.stringify(state,null,2));
+console.log('Saved 4-pane layout. ICT-SE on 5m; volume profile stays on 1h.');

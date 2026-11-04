@@ -1,0 +1,20 @@
+import fs from 'node:fs';import {validateIndicator} from '../public/lib/indicators.js';
+const presets={
+ 'liquidity-swings':{name:'Liquidity Swings [LuxAlgo] · local',params:{length:14,area:'Wick Extremity',intrabar:'Off',intrabarTf:'1m',filter:'Count',threshold:0,labelSize:'Tiny',highs:'On',lows:'On'}},
+ 'buyside-sellside':{name:'Buyside & Sellside Liquidity [LuxAlgo] · local',params:{length:7,margin:6.9,zoneMargin:2.3,buyside:'On',sellside:'On',voids:'Off',voidLabels:'Off',mode:'Present',visible:3}},
+ 'liquidity-sweeps':{name:'Liquidity Sweeps [LuxAlgo] · local',params:{length:5,options:'Only Wicks',extend:'On',maxBars:300}},
+ 'liquidity-pools':{name:'Liquidity Pools [LuxAlgo] · local',params:{contacts:2,gap:5,confirm:10,volumeLabels:'On',labelSize:'Small',fillCandles:'Off'}},
+ 'smc':{name:'Smart Money Concepts [LuxAlgo] · local',params:{mode:'Historical',style:'Colored',colorCandles:'Off',internalStructure:'On',internalBull:'All',internalBear:'All',internalConfluence:'Off',internalSize:'tiny',swingStructure:'On',swingBull:'All',swingBear:'All',swingSize:'small',swingPoints:'Off',swingLength:50,strongWeak:'On',internalOB:'Off',internalOBCount:5,swingOB:'On',obCount:5,obFilter:'Atr',obMitigation:'High/Low',equal:'On',equalBars:3,equalThreshold:.1,equalSize:'tiny',fvg:'Off',autoThreshold:'On',fvgTimeframe:'Chart',fvgExtend:1,daily:'Off',weekly:'Off',monthly:'Off',premiumDiscount:'Off'}},
+ 'ict-concepts':{name:'ICT Concepts [LuxAlgo] · local',params:{mode:'Present',structure:'On',length:5,mss:'On',bos:'On',displacement:'On',volumeImbalance:'Off',visibleVI:2,orderBlocks:'On',obLength:10,bullOBCount:1,bearOBCount:1,polarityHistory:'Off',body:'On',liquidity:'On',margin:4,visibleLiquidity:2,fvg:'Off',bpr:'Off',fvgType:'FVG',visibleFVG:2,nwog:'Off',maxNWOG:3,ndog:'Off',maxNDOG:1,fibonacci:'NONE',extendFib:'Off',killzones:'Off',nyKillzone:'Off',londonOpen:'Off',londonClose:'Off',asiaKillzone:'Off',nyTime:'0700-0900',londonOpenTime:'0700-1000',londonCloseTime:'1500-1700',asiaTime:'1000-1400'}}
+};
+fs.mkdirSync('data/luxalgo-suite',{recursive:true});fs.writeFileSync('data/luxalgo-suite/photo-settings.json',JSON.stringify({reference:'User screenshots, confirmed against Venky Mama legend 2026-10-28',presets},null,2));
+const code=fs.readFileSync('public/lib/luxalgo-suite.js','utf8').replace(/export (function|const) /g,'$1 ');
+const editable=new Set(['length','area','filter','threshold','labelSize','mode','margin','zoneMargin','visible','extend','maxBars','contacts','gap','confirm','volumeLabels','swingLength','equalBars','equalThreshold','obCount','strongWeak','obLength','body','displacement']);
+const options={area:['Wick Extremity','Full Range'],filter:['Count','Volume'],labelSize:['Tiny','Small','Normal'],mode:['Present','Historical'],extend:['On','Off'],volumeLabels:['On','Off'],strongWeak:['On','Off'],body:['On','Off'],displacement:['On','Off']};
+for(const [id,def]of Object.entries(presets)){
+ const inputs=Object.entries(def.params).filter(([key])=>editable.has(key)).map(([key,value])=>({key,label:key.replace(/([A-Z])/g,' $1'),default:value,...(typeof value==='number'?{type:Number.isInteger(value)?'int':'float',min:0,max:key==='maxBars'?5000:1000000}:{type:'select',options:options[key]||[value]})}));
+ inputs.push({key:'latest',label:'Candle availability',type:'select',options:['All completed','Exclude latest'],default:'Exclude latest'});
+ const source=code+'\nexport default '+`{name:${JSON.stringify(def.name)},overlay:true,inputs:${JSON.stringify(inputs)},outputs:[{key:'value',label:'Drawing layer',color:'#089981'}],calc(bars,p){return runLuxStudy(${JSON.stringify(id)},bars,{...${JSON.stringify(def.params)},...p});}};\n`;
+ const file='custom/lux-'+id+'.js';fs.writeFileSync(file,source);const mod=await import('../'+file+'?v='+Date.now());validateIndicator(mod.default);
+ const r=await fetch('http://127.0.0.1:3777/api/custom',{method:'POST',headers:{'Content-Type':'application/json','x-qt':'1'},body:JSON.stringify({name:'lux-'+id,code:source})});if(!r.ok)throw Error(await r.text());console.log('Registered',id);
+}

@@ -1,0 +1,30 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © TheClairvoyant_Trader
+//@version=6
+indicator("Quarterly Divider", overlay=true)
+
+// Input for customizing line color and thickness
+lineColor = input.color(color.red, title="Line Color")
+lineThickness = input.int(2, title="Line Thickness", minval=1, maxval=5)
+
+// Define the quarter start dates (1st of Jan, Apr, Jul, and Oct) from 2025 onward
+startYear = 2023
+quarters = array.new_int(4)
+
+// Add timestamps for each quarter in 2025 and beyond
+for year = startYear to year(timenow)
+    array.push(quarters, timestamp(year, 1, 1, 0, 0))   // Q1
+    array.push(quarters, timestamp(year, 4, 1, 0, 0))   // Q2
+    array.push(quarters, timestamp(year, 7, 1, 0, 0))   // Q3
+    array.push(quarters, timestamp(year, 10, 1, 0, 0))  // Q4
+
+// Loop through the array and draw vertical lines at the start of each quarter
+for i = 0 to array.size(quarters) - 1
+    quarterStartTime = array.get(quarters, i)
+    if (time >= quarterStartTime) and (time[1] < quarterStartTime)
+        // Draw vertical lines
+        line.new(x1=bar_index, x2=bar_index, y1=low, y2=high, color=lineColor, width=lineThickness, extend=extend.both)
+        
+        // Plot quarter labels below the vertical line (near the timestamp)
+        quarterLabel = i % 4 == 0 ? "Q1" : i % 4 == 1 ? "Q2" : i % 4 == 2 ? "Q3" : "Q4"
+        label.new(bar_index, low - (high - low) * 0.1, text=quarterLabel, color=color.red, style=label.style_label_up, size=size.small)

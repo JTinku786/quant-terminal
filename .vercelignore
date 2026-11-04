@@ -1,0 +1,14 @@
+data
+output
+research
+examples
+docs
+video
+dist
+target
+test
+.playwright-cli
+node_modules
+*.log
+*.tmp
+.env*

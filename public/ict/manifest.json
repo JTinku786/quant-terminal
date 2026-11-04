@@ -1,0 +1,128 @@
+{
+  "strategy": "REV-k1_reclaim3-OTE62-2R-MARKET",
+  "mode": "Stored-signal replay / candle market-fill estimate",
+  "exportedAt": "2026-10-24T05:16:38.469887+00:00",
+  "start": "2026-10-01T00:00:00-04:00",
+  "end": "2026-10-24T00:00:00-04:00",
+  "sourceVersion": "REVERSAL_RAW5M_V2",
+  "sourcePolicySHA256": "b3edc09c0fa32e38bd8a362a07cc4e58cced60318e51fe989915642f4a54dd38",
+  "detectorSHA256": "8c18e083317206021071be0561e414c4c2200fe9f75045d18fddd6427f8f5fb3",
+  "limitations": [
+    "Stored signals only; this does not discover new setups or retune the detector.",
+    "Each pair is tested independently; account-wide caps, funding and broker latency are not simulated.",
+    "Sizing is a risk-normalized research estimate; live unit caps, home-currency conversion and leverage caps are not reproduced.",
+    "Candle prices are a fill estimate. Spread and slippage are sensitivity settings, not observed quotes.",
+    "Historical discovery age cannot be reconstructed from observed_at alone.",
+    "Source strategy is forex 1H only; US and India are not this route."
+  ],
+  "symbols": [
+    {
+      "symbol": "AUDJPY",
+      "chartSymbol": "CSV:REV_AUDJPY",
+      "bars": 4810,
+      "signals": 2,
+      "eligible": 2,
+      "missingBars": 2,
+      "snapshotSHA256": "12ef0f032ce7e28398c013094fb6f0824f7520b80ef853f43fa1da365eab795c"
+    },
+    {
+      "symbol": "AUDUSD",
+      "chartSymbol": "CSV:REV_AUDUSD",
+      "bars": 4812,
+      "signals": 3,
+      "eligible": 1,
+      "missingBars": 0,
+      "snapshotSHA256": "365244508629917018c99932c519f28905eb0ccaa663aa82538e792b986d42dd"
+    },
+    {
+      "symbol": "CHFJPY",
+      "chartSymbol": "CSV:REV_CHFJPY",
+      "bars": 4793,
+      "signals": 3,
+      "eligible": 1,
+      "missingBars": 19,
+      "snapshotSHA256": "eb2dd3ceea824216d0dd44edbca95cf5e80de1d36cce3066093d27ffda6fe879"
+    },
+    {
+      "symbol": "EURGBP",
+      "chartSymbol": "CSV:REV_EURGBP",
+      "bars": 4812,
+      "signals": 1,
+      "eligible": 0,
+      "missingBars": 0,
+      "snapshotSHA256": "b441e37ef36f1beb49b9fe284c2937aba7f9bee5545eedb46998651b48d8e19a"
+    },
+    {
+      "symbol": "EURJPY",
+      "chartSymbol": "CSV:REV_EURJPY",
+      "bars": 4806,
+      "signals": 2,
+      "eligible": 1,
+      "missingBars": 6,
+      "snapshotSHA256": "e51b04fb841121beb936b4b62636d9285eb05ecd8af297f06d880457e0dd64d1"
+    },
+    {
+      "symbol": "EURUSD",
+      "chartSymbol": "CSV:REV_EURUSD",
+      "bars": 4811,
+      "signals": 4,
+      "eligible": 2,
+      "missingBars": 1,
+      "snapshotSHA256": "10e5bad7b2e5b77968115490b092220683aeff00fa815936f1e8a588c167db03"
+    },
+    {
+      "symbol": "GBPJPY",
+      "chartSymbol": "CSV:REV_GBPJPY",
+      "bars": 4812,
+      "signals": 3,
+      "eligible": 2,
+      "missingBars": 0,
+      "snapshotSHA256": "4ba02aca8c272f35376994c5007a4790338a51d2cef74dcb6e4c5cebe330221f"
+    },
+    {
+      "symbol": "GBPUSD",
+      "chartSymbol": "CSV:REV_GBPUSD",
+      "bars": 4812,
+      "signals": 4,
+      "eligible": 1,
+      "missingBars": 0,
+      "snapshotSHA256": "860d36cbf4ddb342e27901f3a8e3807821f91ba4fca66d7c5b118a304e700ceb"
+    },
+    {
+      "symbol": "NZDUSD",
+      "chartSymbol": "CSV:REV_NZDUSD",
+      "bars": 4811,
+      "signals": 4,
+      "eligible": 2,
+      "missingBars": 1,
+      "snapshotSHA256": "96a2093ac9a1aeaa2fc25d9a5cd667944bc763d4a21721197dbadda214e68f25"
+    },
+    {
+      "symbol": "USDCAD",
+      "chartSymbol": "CSV:REV_USDCAD",
+      "bars": 4812,
+      "signals": 0,
+      "eligible": 0,
+      "missingBars": 0,
+      "snapshotSHA256": "4645be121dc85db6016615008c7f22a9a9f3802e7908b2e1d9449b34529feeb5"
+    },
+    {
+      "symbol": "USDCHF",
+      "chartSymbol": "CSV:REV_USDCHF",
+      "bars": 4801,
+      "signals": 4,
+      "eligible": 2,
+      "missingBars": 11,
+      "snapshotSHA256": "ae752ad2b299b7e7732df792d532ebdd8ccabbbab63eeb8a419d3b6278f0c82f"
+    },
+    {
+      "symbol": "USDJPY",
+      "chartSymbol": "CSV:REV_USDJPY",
+      "bars": 4810,
+      "signals": 3,
+      "eligible": 2,
+      "missingBars": 2,
+      "snapshotSHA256": "4606cac88809930ed6acc7c82eb40fe4e86a141b0216df96686f4677bf5b628b"
+    }
+  ]
+}

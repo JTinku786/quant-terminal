@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "",
+  "buildCommand": "",
+  "outputDirectory": "public",
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "{custom/**,lib/**,public/lib/**,seed/**,package.json}",
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/index?qtpath=/api/:path*" },
+    { "source": "/custom/:path*", "destination": "/api/index?qtpath=/custom/:path*" }
+  ]
+}

@@ -1,0 +1,12 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {fluxPivot,fluxPoc,fluxAnchor,fluxSession,runFlux} from '../public/lib/flux-order-blocks.js';
+const b=(i,o,h,l,c,v=10)=>({time:Date.parse('2026-10-01T00:00:00Z')/1000+i*300,open:o,high:h,low:l,close:c,volume:v});
+test('Flux pivot confirms only after full right side',()=>{const a=[b(0,2,3,1,2),b(1,3,5,2,3),b(2,2,3,1,2)];assert.equal(fluxPivot(a,1,1,true),null);assert.equal(fluxPivot(a,2,1,true).index,1);});
+test('POC uses price touch count, not highest-volume candle',()=>{const a=[b(0,1,2,0,1),b(1,1,2,0,1),b(2,8,10,8,9,99999)];const p=fluxPoc(a,0,2,10);assert.equal(p.bin,0);assert.equal(p.price,.5);assert.equal(p.total,20);});
+test('Volume source matches Pine code doji handling',()=>{const a=[b(0,1,3,0,2),b(1,2,3,0,1),b(2,1,3,0,1)];const p=fluxPoc(a,0,2);assert.equal(p.total,30);assert.equal(p.bull,10);assert.equal(p.bear,10);});
+test('Anchor uses earliest surviving POC touch',()=>{const a=[b(0,2,4,1,3),b(1,3,5,2,4),b(2,4,6,3,5)];assert.equal(fluxAnchor(a,0,2,3.5,true),0);});
+test('Directional gap rejects a bullish anchor',()=>{const a=[b(0,2,3,1,2),b(1,5,6,4,5)];assert.equal(fluxAnchor(a,0,1,2,true),null);});
+test('All session labels are informational, not trade filters',()=>{for(const [s,name] of [['2026-10-01T01:00:00Z','Asia'],['2026-10-01T06:30:00Z','London'],['2026-10-01T12:00:00Z','NY AM'],['2026-10-01T18:00:00Z','NY PM'],['2026-10-01T16:00:00Z','Other hours']])assert.equal(fluxSession(Date.parse(s)/1000),name);});
+test('Latest bar excluded by default; empty chart supported',()=>{assert.equal(runFlux([b(0,1,2,0,1)]).fluxBlocks.lastIndex,-1);assert.equal(runFlux([]).history.length,0);});
+test('Invalid inputs and unordered candles fail closed',()=>{assert.throws(()=>runFlux([],{swing:0}));assert.throws(()=>runFlux([b(1,1,2,0,1),b(0,1,2,0,1)],{latest:'All completed'}));});
+test('Future bars do not alter past block events',()=>{const a=Array.from({length:350},(_,i)=>{const c=10+3*Math.sin(i*.17);return b(i,c,c+.5,c-.5,c+.1*Math.sin(i),100);});const p={latest:'All completed',swing:3};const x=runFlux(a.slice(0,220),p),y=runFlux(a,p);assert.deepEqual(x.events,y.events.filter(e=>e.index<220));for(const k of ['bullBlock','bearBlock','bullRetest','bearRetest'])assert.deepEqual(x[k],y[k].slice(0,220));});

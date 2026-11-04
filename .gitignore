@@ -1,0 +1,15 @@
+node_modules/
+data/
+*.tmp
+.DS_Store
+video/
+dist/
+target/
+custom/signal-*.js
+
+.vercel
+.env*
+
+.playwright-cli/
+output/
+*.log

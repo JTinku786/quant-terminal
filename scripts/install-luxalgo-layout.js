@@ -1,0 +1,11 @@
+import fs from 'node:fs';import {LUX_IDS} from '../public/lib/luxalgo-suite.js';
+const base='http://127.0.0.1:3777',saved=JSON.parse(fs.readFileSync('data/layouts/old-ict-flux-before-luxalgo-2026-10-28.json'));
+const truth=JSON.parse(fs.readFileSync('data/luxalgo-suite/database-truth.json')),presets=JSON.parse(fs.readFileSync('data/luxalgo-suite/photo-settings.json')).presets;
+const current=await(await fetch(base+'/api/state')).json();
+const view=s=>({layout:s.layout,panes:s.panes,active:s.active??0,settings:s.settings});
+const nextView={layout:'1',active:0,panes:[{symbol:truth.symbol,tf:'5m',type:'candles',compare:[],log:false,ictTradeSetups:[],ictRole:'Venky Mama · 6 LuxAlgo studies · database candles',indicators:LUX_IDS.map((id,i)=>({uid:'lux-photo-'+i,id:'custom:lux-'+id,params:{...presets[id].params,latest:'All completed'}}))}],settings:{...current.settings,theme:'dark',chartStyle:'luxalgo',volume:true,bars:20000,syncSymbol:false}};
+const library={...current.layoutLibrary,'old-ict-flux':{name:'Old ICT / Flux layout',view:view(saved)},'venky-mama-luxalgo':{name:'Venky Mama · LuxAlgo 6',view:nextView}};
+const next={...current,...nextView,layoutLibrary:library,activeLayoutId:'venky-mama-luxalgo'};
+fs.writeFileSync('data/layouts/venky-mama-luxalgo-six.json',JSON.stringify(next,null,2));
+const r=await fetch(base+'/api/state',{method:'PUT',headers:{'Content-Type':'application/json','x-qt':'1'},body:JSON.stringify(next)});if(!r.ok)throw Error(await r.text());
+console.log(JSON.stringify({layout:'Venky Mama · LuxAlgo 6',oldLayout:'old-ict-flux-before-luxalgo-2026-10-28.json',bars:truth.bars.length,source:truth.sources,lastBar:truth.bars.at(-1).time,indicators:LUX_IDS}));

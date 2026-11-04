@@ -1,0 +1,862 @@
+{
+  "watchlists": {
+    "Titania India": [
+      "YAHOO:^NSEI",
+      "YAHOO:^NSEBANK",
+      "YAHOO:RELIANCE.NS",
+      "YAHOO:TCS.NS"
+    ],
+    "Titania US": [
+      "US:AAPL",
+      "US:AXP",
+      "US:BA",
+      "US:CAT",
+      "US:CSCO",
+      "US:CVX",
+      "US:DD",
+      "US:DIS",
+      "US:GE",
+      "US:GS",
+      "US:HD",
+      "US:IBM",
+      "US:INTC",
+      "US:JNJ",
+      "US:JPM",
+      "US:KO",
+      "US:MCD",
+      "US:MMM",
+      "US:MRK",
+      "US:MSFT",
+      "US:NKE",
+      "US:PFE",
+      "US:PG",
+      "US:TRV",
+      "US:UNH",
+      "US:V",
+      "US:VZ",
+      "US:WMT",
+      "US:XOM"
+    ],
+    "Dow Jones 30": [
+      "US:GS",
+      "US:CAT",
+      "US:MSFT",
+      "US:AMGN",
+      "US:UNH",
+      "US:V",
+      "US:TRV",
+      "US:AAPL",
+      "US:SHW",
+      "US:JPM",
+      "US:GOOGL",
+      "US:HD",
+      "US:AXP",
+      "US:JNJ",
+      "US:IBM",
+      "US:AMZN",
+      "US:MCD",
+      "US:CRM",
+      "US:CVX",
+      "US:HON",
+      "US:NVDA",
+      "US:BA",
+      "US:MMM",
+      "US:PG",
+      "US:MRK",
+      "US:WMT",
+      "US:DIS",
+      "US:CSCO",
+      "US:KO",
+      "US:NKE"
+    ]
+  },
+  "activeWatchlist": "Dow Jones 30",
+  "panes": [
+    {
+      "symbol": "US:ARM",
+      "tf": "1D",
+      "type": "candles",
+      "indicators": [
+        {
+          "uid": "lux-photo-0",
+          "id": "custom:lux-liquidity-swings",
+          "params": {
+            "length": 14,
+            "area": "Wick Extremity",
+            "intrabar": "Off",
+            "intrabarTf": "1m",
+            "filter": "Count",
+            "threshold": 0,
+            "labelSize": "Tiny",
+            "highs": "On",
+            "lows": "On",
+            "latest": "All completed"
+          }
+        },
+        {
+          "uid": "lux-photo-1",
+          "id": "custom:lux-buyside-sellside",
+          "params": {
+            "length": 7,
+            "margin": 6.9,
+            "zoneMargin": 2.3,
+            "buyside": "On",
+            "sellside": "On",
+            "voids": "Off",
+            "voidLabels": "Off",
+            "mode": "Present",
+            "visible": 3,
+            "latest": "All completed"
+          }
+        },
+        {
+          "uid": "lux-photo-2",
+          "id": "custom:lux-liquidity-sweeps",
+          "params": {
+            "length": 5,
+            "options": "Only Wicks",
+            "extend": "On",
+            "maxBars": 300,
+            "latest": "All completed"
+          }
+        },
+        {
+          "uid": "lux-photo-3",
+          "id": "custom:lux-liquidity-pools",
+          "params": {
+            "contacts": 2,
+            "gap": 5,
+            "confirm": 10,
+            "volumeLabels": "On",
+            "labelSize": "Small",
+            "fillCandles": "Off",
+            "latest": "All completed"
+          }
+        },
+        {
+          "uid": "lux-photo-4",
+          "id": "custom:lux-smc",
+          "params": {
+            "mode": "Historical",
+            "style": "Colored",
+            "colorCandles": "Off",
+            "internalStructure": "On",
+            "internalBull": "All",
+            "internalBear": "All",
+            "internalConfluence": "Off",
+            "internalSize": "tiny",
+            "swingStructure": "On",
+            "swingBull": "All",
+            "swingBear": "All",
+            "swingSize": "small",
+            "swingPoints": "Off",
+            "swingLength": 50,
+            "strongWeak": "On",
+            "internalOB": "Off",
+            "internalOBCount": 5,
+            "swingOB": "On",
+            "obCount": 5,
+            "obFilter": "Atr",
+            "obMitigation": "High/Low",
+            "equal": "On",
+            "equalBars": 3,
+            "equalThreshold": 0.1,
+            "equalSize": "tiny",
+            "fvg": "Off",
+            "autoThreshold": "On",
+            "fvgTimeframe": "Chart",
+            "fvgExtend": 1,
+            "daily": "Off",
+            "weekly": "Off",
+            "monthly": "Off",
+            "premiumDiscount": "Off",
+            "latest": "All completed"
+          }
+        },
+        {
+          "uid": "lux-photo-5",
+          "id": "custom:lux-ict-concepts",
+          "params": {
+            "mode": "Present",
+            "structure": "On",
+            "length": 5,
+            "mss": "On",
+            "bos": "On",
+            "displacement": "On",
+            "volumeImbalance": "Off",
+            "visibleVI": 2,
+            "orderBlocks": "On",
+            "obLength": 10,
+            "bullOBCount": 1,
+            "bearOBCount": 1,
+            "polarityHistory": "Off",
+            "body": "On",
+            "liquidity": "On",
+            "margin": 4,
+            "visibleLiquidity": 2,
+            "fvg": "Off",
+            "bpr": "Off",
+            "fvgType": "FVG",
+            "visibleFVG": 2,
+            "nwog": "Off",
+            "maxNWOG": 3,
+            "ndog": "Off",
+            "maxNDOG": 1,
+            "fibonacci": "NONE",
+            "extendFib": "Off",
+            "killzones": "Off",
+            "nyKillzone": "Off",
+            "londonOpen": "Off",
+            "londonClose": "Off",
+            "asiaKillzone": "Off",
+            "nyTime": "0700-0900",
+            "londonOpenTime": "0700-1000",
+            "londonCloseTime": "1500-1700",
+            "asiaTime": "1000-1400",
+            "latest": "All completed"
+          }
+        },
+        {
+          "uid": "liquidity-pullback-strategy",
+          "id": "custom:liquidity-pullback",
+          "params": {
+            "wait": 3,
+            "rr": 1.7,
+            "stopMode": "Farther",
+            "touchMode": "Touch",
+            "visible": 8
+          }
+        },
+        {
+          "uid": "next-candle-predictor",
+          "id": "custom:next-candle-predictor",
+          "params": {},
+          "hidden": true
+        },
+        {
+          "uid": "sniper-khansaab",
+          "id": "custom:sniper-khansaab",
+          "params": {}
+        },
+        {
+          "uid": "required-liquidity-sfp",
+          "id": "custom:ict-liquidity-sfp",
+          "params": {}
+        }
+      ],
+      "compare": [],
+      "log": false,
+      "ictTradeSetups": [],
+      "ictRole": "Liquidity → displacement → pullback · experimental"
+    }
+  ],
+  "layout": "1",
+  "drawings": {},
+  "settings": {
+    "theme": "dark",
+    "volume": true,
+    "bars": 20000,
+    "utc": false,
+    "stayInDrawMode": false,
+    "syncCrosshair": true,
+    "syncSymbol": false,
+    "syncReplay": true,
+    "chartStyle": "luxalgo"
+  },
+  "paper": null,
+  "strategies": {},
+  "active": 0,
+  "ictRevSymbol": "NZDUSD",
+  "ictWorkspace": {
+    "symbol": "NZDUSD",
+    "end": "2026-10-24T00:00:00-04:00",
+    "sourceVersion": "REVERSAL_RAW5M_V2",
+    "audit": {
+      "excluded_ts": [],
+      "sources": [
+        "barchart",
+        "derived_1m"
+      ],
+      "source_version": "REVERSAL_RAW5M_V2",
+      "fingerprint": "540b0bc5cee2eda82a7b76e5aa323820c6dd4117fae7e2e215882e1533ce4e2c",
+      "selectedCandles": 112636,
+      "first": "2025-04-22",
+      "last": "2026-10-23",
+      "latestKnownAt": 1792789200000,
+      "equivalence_policy": "US abs1e-4; FX max(abs1e-7,rel1e-7); preserve preferred raw OHLC"
+    },
+    "referenceClock": "Canonical NY calendar-day rollups; Sunday merged into Monday",
+    "panes": [
+      {
+        "tf": "1D",
+        "symbol": "CSV:ICT_NZDUSD_D1",
+        "bars": 378,
+        "first": "2025-04-22",
+        "last": "2026-10-23",
+        "sha256": "9638df4eb289fd5d62cff039dce978857c5b141dc413e5a4efb204555cc79bdc"
+      },
+      {
+        "tf": "1h",
+        "symbol": "CSV:ICT_NZDUSD_H1",
+        "bars": 8000,
+        "first": "2025-07-10",
+        "last": "2026-10-23",
+        "sha256": "864d997cc454e428dd6af22aecae783cd2e9ffdb6f21e039fc4cfcd939f28b11"
+      },
+      {
+        "tf": "30m",
+        "symbol": "CSV:ICT_NZDUSD_M30",
+        "bars": 8000,
+        "first": "2026-03-04",
+        "last": "2026-10-23",
+        "sha256": "194aa729343794fda5fc43e9c63c92bf5c6db7ed38548af0e8bf512257a9d085"
+      },
+      {
+        "tf": "5m",
+        "symbol": "CSV:ICT_NZDUSD_M5",
+        "bars": 20000,
+        "first": "2026-07-20",
+        "last": "2026-10-23",
+        "sha256": "0d7d87ebc47d62229c01158e7c3fc0affe1808cacc7287ad8de12c4c07043474"
+      }
+    ]
+  },
+  "layoutLibrary": {
+    "old-ict-flux": {
+      "name": "Old ICT / Flux layout",
+      "view": {
+        "layout": "4",
+        "panes": [
+          {
+            "symbol": "CSV:ICT_NZDUSD_D1",
+            "tf": "1D",
+            "type": "candles",
+            "indicators": [
+              {
+                "uid": "ict-workspace-1",
+                "id": "custom:ict-context-nzdusd",
+                "params": {
+                  "lastBar": "All supplied bars completed",
+                  "swingBars": 2,
+                  "reference": "Weekly",
+                  "swings": "On",
+                  "equilibrium": "On",
+                  "marks": "Off"
+                }
+              },
+              {
+                "uid": "ict-workspace-2",
+                "id": "custom:ict-fvg-midpoints",
+                "params": {
+                  "lastBar": "All supplied bars completed",
+                  "seconds": 86400,
+                  "minBps": 0
+                }
+              },
+              {
+                "uid": "quarterly-divider-daily",
+                "id": "custom:quarterly-divider",
+                "params": {
+                  "timeZone": "America/New_York",
+                  "width": 2,
+                  "labels": "On"
+                }
+              }
+            ],
+            "compare": [],
+            "log": false,
+            "ictTradeSetups": [],
+            "ictRole": "Daily liquidity context"
+          },
+          {
+            "symbol": "CSV:ICT_NZDUSD_H1",
+            "tf": "1h",
+            "type": "candles",
+            "indicators": [
+              {
+                "uid": "ict-workspace-3",
+                "id": "custom:ict-context-nzdusd",
+                "params": {
+                  "lastBar": "All supplied bars completed",
+                  "swingBars": 2,
+                  "reference": "Off",
+                  "swings": "On",
+                  "equilibrium": "On",
+                  "marks": "On"
+                }
+              },
+              {
+                "uid": "ict-workspace-4",
+                "id": "custom:ict-fvg-zones",
+                "params": {
+                  "lastBar": "All supplied bars completed",
+                  "seconds": 3600,
+                  "minBps": 0
+                }
+              },
+              {
+                "uid": "ict-profile-1",
+                "id": "vpvr",
+                "params": {
+                  "rows": 24,
+                  "width": 25,
+                  "valueArea": 70
+                }
+              }
+            ],
+            "compare": [],
+            "log": false,
+            "ictTradeSetups": [],
+            "ictRole": "1H structure and FVG"
+          },
+          {
+            "symbol": "CSV:ICT_NZDUSD_M30",
+            "tf": "30m",
+            "type": "candles",
+            "indicators": [
+              {
+                "uid": "ict-workspace-5",
+                "id": "custom:ict-context-nzdusd",
+                "params": {
+                  "lastBar": "All supplied bars completed",
+                  "swingBars": 2,
+                  "reference": "Daily",
+                  "swings": "Off",
+                  "equilibrium": "Off",
+                  "marks": "Off"
+                }
+              },
+              {
+                "uid": "ict-workspace-6",
+                "id": "custom:ict-fvg-midpoints",
+                "params": {
+                  "lastBar": "All supplied bars completed",
+                  "seconds": 1800,
+                  "minBps": 0
+                }
+              },
+              {
+                "uid": "ict-workspace-7",
+                "id": "custom:ict-sessions",
+                "params": {
+                  "lastBar": "All supplied bars completed",
+                  "labels": "On"
+                }
+              }
+            ],
+            "compare": [],
+            "log": false,
+            "ictTradeSetups": [],
+            "ictRole": "30m setup and session map"
+          },
+          {
+            "symbol": "US:PG",
+            "tf": "5m",
+            "type": "candles",
+            "indicators": [
+              {
+                "uid": "ict-engine-5m",
+                "id": "custom:ict-structure-engine",
+                "params": {
+                  "latest": "All completed",
+                  "seconds": 300,
+                  "market": "forex",
+                  "tick": 0.00001,
+                  "showZones": "Off"
+                }
+              },
+              {
+                "uid": "ict-workspace-10",
+                "id": "custom:ict-sessions",
+                "params": {
+                  "lastBar": "All supplied bars completed",
+                  "labels": "On"
+                }
+              },
+              {
+                "uid": "flux-all-sessions-5m",
+                "id": "custom:flux-order-blocks",
+                "params": {
+                  "latest": "All completed",
+                  "swing": 5,
+                  "nearest": 3,
+                  "threeD": "On",
+                  "delta": "On"
+                },
+                "hidden": false
+              }
+            ],
+            "compare": [],
+            "log": false,
+            "ictTradeSetups": [],
+            "ictRole": "5m · Flux OB, all sessions + ICT-SE"
+          }
+        ],
+        "active": 3,
+        "settings": {
+          "theme": "light",
+          "volume": false,
+          "bars": 20000,
+          "utc": false,
+          "stayInDrawMode": false,
+          "syncCrosshair": true,
+          "syncSymbol": false,
+          "syncReplay": true,
+          "chartStyle": "ict"
+        }
+      }
+    },
+    "venky-mama-luxalgo": {
+      "name": "Venky Mama · LuxAlgo 6",
+      "view": {
+        "layout": "1",
+        "panes": [
+          {
+            "symbol": "CSV:DB_RELIANCE_5M",
+            "tf": "5m",
+            "type": "candles",
+            "indicators": [
+              {
+                "uid": "lux-photo-0",
+                "id": "custom:lux-liquidity-swings",
+                "params": {
+                  "length": 14,
+                  "area": "Wick Extremity",
+                  "intrabar": "Off",
+                  "intrabarTf": "1m",
+                  "filter": "Count",
+                  "threshold": 0,
+                  "labelSize": "Tiny",
+                  "highs": "On",
+                  "lows": "On",
+                  "latest": "All completed"
+                }
+              },
+              {
+                "uid": "lux-photo-1",
+                "id": "custom:lux-buyside-sellside",
+                "params": {
+                  "length": 7,
+                  "margin": 6.9,
+                  "zoneMargin": 2.3,
+                  "buyside": "On",
+                  "sellside": "On",
+                  "voids": "Off",
+                  "voidLabels": "Off",
+                  "mode": "Present",
+                  "visible": 3,
+                  "latest": "All completed"
+                }
+              },
+              {
+                "uid": "lux-photo-2",
+                "id": "custom:lux-liquidity-sweeps",
+                "params": {
+                  "length": 5,
+                  "options": "Only Wicks",
+                  "extend": "On",
+                  "maxBars": 300,
+                  "latest": "All completed"
+                }
+              },
+              {
+                "uid": "lux-photo-3",
+                "id": "custom:lux-liquidity-pools",
+                "params": {
+                  "contacts": 2,
+                  "gap": 5,
+                  "confirm": 10,
+                  "volumeLabels": "On",
+                  "labelSize": "Small",
+                  "fillCandles": "Off",
+                  "latest": "All completed"
+                }
+              },
+              {
+                "uid": "lux-photo-4",
+                "id": "custom:lux-smc",
+                "params": {
+                  "mode": "Historical",
+                  "style": "Colored",
+                  "colorCandles": "Off",
+                  "internalStructure": "On",
+                  "internalBull": "All",
+                  "internalBear": "All",
+                  "internalConfluence": "Off",
+                  "internalSize": "tiny",
+                  "swingStructure": "On",
+                  "swingBull": "All",
+                  "swingBear": "All",
+                  "swingSize": "small",
+                  "swingPoints": "Off",
+                  "swingLength": 50,
+                  "strongWeak": "On",
+                  "internalOB": "Off",
+                  "internalOBCount": 5,
+                  "swingOB": "On",
+                  "obCount": 5,
+                  "obFilter": "Atr",
+                  "obMitigation": "High/Low",
+                  "equal": "On",
+                  "equalBars": 3,
+                  "equalThreshold": 0.1,
+                  "equalSize": "tiny",
+                  "fvg": "Off",
+                  "autoThreshold": "On",
+                  "fvgTimeframe": "Chart",
+                  "fvgExtend": 1,
+                  "daily": "Off",
+                  "weekly": "Off",
+                  "monthly": "Off",
+                  "premiumDiscount": "Off",
+                  "latest": "All completed"
+                }
+              },
+              {
+                "uid": "lux-photo-5",
+                "id": "custom:lux-ict-concepts",
+                "params": {
+                  "mode": "Present",
+                  "structure": "On",
+                  "length": 5,
+                  "mss": "On",
+                  "bos": "On",
+                  "displacement": "On",
+                  "volumeImbalance": "Off",
+                  "visibleVI": 2,
+                  "orderBlocks": "On",
+                  "obLength": 10,
+                  "bullOBCount": 1,
+                  "bearOBCount": 1,
+                  "polarityHistory": "Off",
+                  "body": "On",
+                  "liquidity": "On",
+                  "margin": 4,
+                  "visibleLiquidity": 2,
+                  "fvg": "Off",
+                  "bpr": "Off",
+                  "fvgType": "FVG",
+                  "visibleFVG": 2,
+                  "nwog": "Off",
+                  "maxNWOG": 3,
+                  "ndog": "Off",
+                  "maxNDOG": 1,
+                  "fibonacci": "NONE",
+                  "extendFib": "Off",
+                  "killzones": "Off",
+                  "nyKillzone": "Off",
+                  "londonOpen": "Off",
+                  "londonClose": "Off",
+                  "asiaKillzone": "Off",
+                  "nyTime": "0700-0900",
+                  "londonOpenTime": "0700-1000",
+                  "londonCloseTime": "1500-1700",
+                  "asiaTime": "1000-1400",
+                  "latest": "All completed"
+                }
+              }
+            ],
+            "compare": [],
+            "log": false,
+            "ictTradeSetups": [],
+            "ictRole": "Venky Mama · 6 LuxAlgo studies · database candles"
+          }
+        ],
+        "active": 0,
+        "settings": {
+          "theme": "dark",
+          "volume": true,
+          "bars": 20000,
+          "utc": false,
+          "stayInDrawMode": false,
+          "syncCrosshair": true,
+          "syncSymbol": false,
+          "syncReplay": true,
+          "chartStyle": "luxalgo"
+        }
+      }
+    },
+    "liquidity-displacement-pullback": {
+      "name": "Liquidity displacement pullback",
+      "view": {
+        "layout": "1",
+        "panes": [
+          {
+            "symbol": "CSV:DB_RELIANCE_5M",
+            "tf": "5m",
+            "type": "candles",
+            "indicators": [
+              {
+                "uid": "lux-photo-0",
+                "id": "custom:lux-liquidity-swings",
+                "params": {
+                  "length": 14,
+                  "area": "Wick Extremity",
+                  "intrabar": "Off",
+                  "intrabarTf": "1m",
+                  "filter": "Count",
+                  "threshold": 0,
+                  "labelSize": "Tiny",
+                  "highs": "On",
+                  "lows": "On",
+                  "latest": "All completed"
+                }
+              },
+              {
+                "uid": "lux-photo-1",
+                "id": "custom:lux-buyside-sellside",
+                "params": {
+                  "length": 7,
+                  "margin": 6.9,
+                  "zoneMargin": 2.3,
+                  "buyside": "On",
+                  "sellside": "On",
+                  "voids": "Off",
+                  "voidLabels": "Off",
+                  "mode": "Present",
+                  "visible": 3,
+                  "latest": "All completed"
+                }
+              },
+              {
+                "uid": "lux-photo-2",
+                "id": "custom:lux-liquidity-sweeps",
+                "params": {
+                  "length": 5,
+                  "options": "Only Wicks",
+                  "extend": "On",
+                  "maxBars": 300,
+                  "latest": "All completed"
+                }
+              },
+              {
+                "uid": "lux-photo-3",
+                "id": "custom:lux-liquidity-pools",
+                "params": {
+                  "contacts": 2,
+                  "gap": 5,
+                  "confirm": 10,
+                  "volumeLabels": "On",
+                  "labelSize": "Small",
+                  "fillCandles": "Off",
+                  "latest": "All completed"
+                }
+              },
+              {
+                "uid": "lux-photo-4",
+                "id": "custom:lux-smc",
+                "params": {
+                  "mode": "Historical",
+                  "style": "Colored",
+                  "colorCandles": "Off",
+                  "internalStructure": "On",
+                  "internalBull": "All",
+                  "internalBear": "All",
+                  "internalConfluence": "Off",
+                  "internalSize": "tiny",
+                  "swingStructure": "On",
+                  "swingBull": "All",
+                  "swingBear": "All",
+                  "swingSize": "small",
+                  "swingPoints": "Off",
+                  "swingLength": 50,
+                  "strongWeak": "On",
+                  "internalOB": "Off",
+                  "internalOBCount": 5,
+                  "swingOB": "On",
+                  "obCount": 5,
+                  "obFilter": "Atr",
+                  "obMitigation": "High/Low",
+                  "equal": "On",
+                  "equalBars": 3,
+                  "equalThreshold": 0.1,
+                  "equalSize": "tiny",
+                  "fvg": "Off",
+                  "autoThreshold": "On",
+                  "fvgTimeframe": "Chart",
+                  "fvgExtend": 1,
+                  "daily": "Off",
+                  "weekly": "Off",
+                  "monthly": "Off",
+                  "premiumDiscount": "Off",
+                  "latest": "All completed"
+                }
+              },
+              {
+                "uid": "lux-photo-5",
+                "id": "custom:lux-ict-concepts",
+                "params": {
+                  "mode": "Present",
+                  "structure": "On",
+                  "length": 5,
+                  "mss": "On",
+                  "bos": "On",
+                  "displacement": "On",
+                  "volumeImbalance": "Off",
+                  "visibleVI": 2,
+                  "orderBlocks": "On",
+                  "obLength": 10,
+                  "bullOBCount": 1,
+                  "bearOBCount": 1,
+                  "polarityHistory": "Off",
+                  "body": "On",
+                  "liquidity": "On",
+                  "margin": 4,
+                  "visibleLiquidity": 2,
+                  "fvg": "Off",
+                  "bpr": "Off",
+                  "fvgType": "FVG",
+                  "visibleFVG": 2,
+                  "nwog": "Off",
+                  "maxNWOG": 3,
+                  "ndog": "Off",
+                  "maxNDOG": 1,
+                  "fibonacci": "NONE",
+                  "extendFib": "Off",
+                  "killzones": "Off",
+                  "nyKillzone": "Off",
+                  "londonOpen": "Off",
+                  "londonClose": "Off",
+                  "asiaKillzone": "Off",
+                  "nyTime": "0700-0900",
+                  "londonOpenTime": "0700-1000",
+                  "londonCloseTime": "1500-1700",
+                  "asiaTime": "1000-1400",
+                  "latest": "All completed"
+                }
+              },
+              {
+                "uid": "liquidity-pullback-strategy",
+                "id": "custom:liquidity-pullback",
+                "params": {
+                  "wait": 3,
+                  "rr": 1.7,
+                  "stopMode": "Farther",
+                  "touchMode": "Touch",
+                  "visible": 8
+                }
+              }
+            ],
+            "compare": [],
+            "log": false,
+            "ictTradeSetups": [],
+            "ictRole": "Liquidity → displacement → pullback · experimental"
+          }
+        ],
+        "active": 0,
+        "settings": {
+          "theme": "dark",
+          "volume": true,
+          "bars": 20000,
+          "utc": false,
+          "stayInDrawMode": false,
+          "syncCrosshair": true,
+          "syncSymbol": false,
+          "syncReplay": true,
+          "chartStyle": "luxalgo"
+        }
+      }
+    }
+  },
+  "activeLayoutId": "liquidity-displacement-pullback"
+}
