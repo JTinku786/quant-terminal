@@ -287,6 +287,40 @@ async function handle(req, res) {
         await data.getCandles(q.symbol, q.tf || "1D", q.limit),
         edgeCache(p, q),
       );
+    // Titania backtests: strategies + trades from the ICT Algo Trader Backtest API (same database).
+    if (p === "/api/titania/strategies" || p === "/api/titania/trades") {
+      const base = process.env.QT_ICT_API_URL || "https://algo-ict-trader.vercel.app";
+      const u = new URL("/api/backtest", base);
+      if (p === "/api/titania/strategies") {
+        u.searchParams.set("filters_only", "true");
+        u.searchParams.set("symbol", "ALL");
+      } else {
+        const strategy = String(q.strategy || "").trim();
+        const symbol = String(q.symbol || "").trim();
+        if (!strategy || !symbol) throw httpError(400, "Pick a strategy and a symbol");
+        u.searchParams.set("strategy_id", strategy);
+        u.searchParams.set("symbol", symbol);
+        u.searchParams.set("target_no", String(q.target || "1"));
+        if (q.year && q.year !== "ALL") u.searchParams.set("year", String(q.year));
+        u.searchParams.set("trade_sort", "entry_datetime");
+        u.searchParams.set("trade_order", "asc");
+        u.searchParams.set("include_filters", "false");
+      }
+      const r = await fetch(u, { signal: AbortSignal.timeout(55000) });
+      const j = await r.json().catch(() => null);
+      if (!r.ok || !j || j.success === false) throw Object.assign(new Error(j?.error || `Backtest API ${r.status}`), { status: 502, upstream: true });
+      const cache = PUBLIC_MODE ? { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600" } : {};
+      if (p === "/api/titania/strategies")
+        return send(res, 200, { symbols: j.filters?.symbols ?? [], strategies: j.filters?.strategies ?? [] }, cache);
+      const trades = (j.trades ?? []).map((t) => ({
+        id: t.order_id, symbol: t.symbol, market: t.market, strategy: t.strategy_id, side: t.direction,
+        signalAt: t.entry_datetime, filledAt: t.filled_at || t.entry_datetime, closedAt: t.close_ts,
+        entry: t.filled ?? t.entry, plannedEntry: t.entry, stop: t.stop, target: t.target_price ?? t.tp1,
+        tp1: t.tp1, tp2: t.tp2, tp3: t.tp3, exit: t.close_price, r: t.r, outcome: t.outcome, exitType: t.exit_type,
+        holdMin: t.hold_min, plannedRR: t.target_ratio,
+      }));
+      return send(res, 200, { summary: j.summary ?? null, total: j.total_trades ?? trades.length, trades }, cache);
+    }
     if (p === "/api/quotes")
       return send(
         res,

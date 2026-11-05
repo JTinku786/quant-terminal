@@ -14,6 +14,7 @@ import { mountPtqCheck, renderPtqTab } from "./ptq.js";
 import { renderNews, renderSeasonals, renderFinancials } from "./research.js";
 import { mountQuantChecks } from "./quantui.js";
 import { renderIctRev } from "./ict-rev.js";
+import { renderTitaniaBt } from "./titania-bt.js";
 import {
   backtest,
   tradesCsv,
@@ -259,6 +260,7 @@ export function initPanels(app) {
       ({
         tester: renderTester,
         ict: () => renderIctRev(bottom, app),
+        titania: () => renderTitaniaBt(bottom, app),
         screener: renderScreener,
         heatmap: renderHeatmap,
         seasonals: () => renderSeasonals(bottom, app),

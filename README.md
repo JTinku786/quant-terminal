@@ -51,6 +51,16 @@ Buy and sell on the chart with a pretend account.
 
 ![Paper trading](docs/images/06-paper-trading.png)
 
+### 6. Titania backtest — replay real backtest trades
+Open the **Titania backtest** tab at the bottom. Pick a strategy (S16, S15, Scalping OB V4…), a symbol, a target (1/2/3) and a year. You get the same trades as the Backtest tab of ICT Algo Trader, with win rate and net R.
+
+- **▶ Replay from entry**: the chart opens on the candles the backtest used, stopped at the entry candle. Green box = target, red box = stop. Step forward to watch the trade play out.
+- **Entry + exit**: shows the whole trade, with the exit and the R it made.
+- **ICT backtest indicators** (ticked by default) puts on the full ICT stack: Order Blocks, Major BoS / Supply-Demand / Inflection, Zig Zag, Buyside & Sellside Liquidity, ICT sessions, Quarterly divider, **Market Structure Shift (MSS)**, **FVG + Inversion FVG**, and **ICT Rejection Blocks**.
+- The same stack is saved as the **ICT Backtest (Titania)** layout.
+
+![Titania backtest](docs/images/titania-backtest.png)
+
 ## On the live site vs. on your PC
 
 | | Live site (Vercel) | On your PC (`npm start`) |

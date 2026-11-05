@@ -856,6 +856,72 @@
           "chartStyle": "luxalgo"
         }
       }
+    },
+    "ict-backtest": {
+      "name": "ICT Backtest (Titania)",
+      "view": {
+        "layout": "1",
+        "panes": [
+          {
+            "symbol": "TBT:AAPL_20170817",
+            "tf": "5m",
+            "type": "candles",
+            "indicators": [
+              {
+                "uid": "ictbt-0",
+                "id": "custom:flux-order-blocks",
+                "params": {}
+              },
+              {
+                "uid": "ictbt-1",
+                "id": "custom:market-structure-sd",
+                "params": {}
+              },
+              {
+                "uid": "ictbt-2",
+                "id": "zigzag",
+                "params": {
+                  "deviation": 0.5,
+                  "depth": 10
+                }
+              },
+              {
+                "uid": "ictbt-3",
+                "id": "custom:lux-buyside-sellside",
+                "params": {}
+              },
+              {
+                "uid": "ictbt-4",
+                "id": "custom:ict-sessions",
+                "params": {}
+              },
+              {
+                "uid": "ictbt-5",
+                "id": "custom:quarterly-divider",
+                "params": {}
+              },
+              {
+                "uid": "ictbt-6",
+                "id": "custom:ict-mss",
+                "params": {}
+              },
+              {
+                "uid": "ictbt-7",
+                "id": "custom:ict-ifvg",
+                "params": {}
+              },
+              {
+                "uid": "ictbt-8",
+                "id": "custom:ict-rejection-blocks",
+                "params": {}
+              }
+            ],
+            "compare": [],
+            "log": false,
+            "ictTradeSetups": []
+          }
+        ]
+      }
     }
   },
   "activeLayoutId": "liquidity-displacement-pullback"
